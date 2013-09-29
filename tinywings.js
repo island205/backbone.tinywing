@@ -50,6 +50,12 @@
 
   domTpl = tinywings(tpl);
 
-  domTpl.text('something like this');
+  window.onload = function() {
+    document.body.appendChild(domTpl.frag.firstChild);
+    domTpl.text('something like this');
+    return setTimeout(function() {
+      return domTpl.text('changed after 5s');
+    }, 5000);
+  };
 
 }).call(this);

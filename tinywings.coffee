@@ -32,11 +32,20 @@ tinywings = (tpl)->
   tw
 
 # Test
-
+# knockout tpl syntax
 tpl = '''
   <div data-bind = 'text:text'></div>
 '''
 
+
+
 domTpl = tinywings tpl
 
-domTpl.text 'something like this'
+window.onload = ->
+  document.body.appendChild domTpl.frag.firstChild
+  domTpl.text 'something like this'
+
+  setTimeout ->
+    domTpl.text 'changed after 5s'
+  ,
+  5000
