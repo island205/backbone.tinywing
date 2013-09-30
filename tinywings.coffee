@@ -8,41 +8,56 @@ log = ->
 
 travel = (node, callback)->
   node = node.firstChild
+  stop = false
+  done = ->
+    stop = true
   while node
-    callback node
     log "travel #{node}"
-    travel node, callback
+    callback node, done
+    if not stop
+      travel node, callback
     node = node.nextSibling
 
 tinywings = (tpl)->
+  log 'START BIND'
   tw = {}
   frag = document.createElement 'div'
   frag.innerHTML = tpl
   tw.frag = frag
-  travel frag, (node)->
-    console.log node
+  travel frag, (node, done)->
     if node.dataset?.bind
       bind = node.dataset.bind
       [type, attr]= bind.split ':'
       switch type
         when 'text'
+          log "text-bind to #{node} with #{attr} key"
           tw[attr] = (val)->
             node.innerHTML = val
-            log "text-bind to #{node} with #{val}"
+            log "text-refrash to #{node} with #{val}"
         when 'foreach'
+          done()
           innerTpl = node.innerHTML
+          log "foreach-bind to #{node} with #{attr} key"
           tw[attr] = (val)->
             node.innerHTML = ''
-            log "foreach-bind to #{node} with #{val}"
+            log "foreach-refrash to #{node} with #{val}"
             for item in val
               innerDomTpl = tinywings innerTpl
-              node.appendChild innerDomTpl.frag.firstChild
+
+              # copy children elements
+              child = innerDomTpl.frag.firstChild
+              while child
+                next = child.nextSibling
+                node.appendChild child
+                child = next
+
               for own key, value of innerDomTpl
                 if key isnt 'frag'
                   if item[key]
                     innerDomTpl[key] item[key]
             return
     return
+  log 'END BIND'
   tw
 
 # Test
@@ -54,33 +69,36 @@ tpl = '''
 '''
 
 tpl1 = '''
-  <div data-bind="foreach:people"><p data-bind="text:text"></p></div>
+  <div data-bind="foreach:people"><p data-bind="text:content"></p><p data-bind="text:name"></p></div>
 '''
 
 
-domTpl = tinywings tpl
-domTpl1 = tinywings tpl1
 
 window.onload = ->
-  document.body.appendChild domTpl.frag.firstChild
-  document.body.appendChild domTpl1.frag.firstChild
+  test1 = ->
+    domTpl = tinywings tpl
+    document.body.appendChild domTpl.frag.firstChild
+    domTpl.text('something like this')
+    setTimeout ->
+      domTpl.text 'changed after 5s'
+    ,
+    5000
 
-  domTpl.text('something like this')
-  setTimeout ->
-    domTpl.text 'changed after 5s'
-  ,
-  5000
-
-  domTpl1.people [
-    {text:'xxx'}
-    {text:'x'}
-  ]
-
-  setTimeout ->
+  test2 = ->
+    domTpl1 = tinywings tpl1
+    document.body.appendChild domTpl1.frag.firstChild
     domTpl1.people [
-      {text:'xxx'}
-      {text:'xxxx'}
-      {text:'x'}
+      {content:'xxx', name: 'yyyy'}
+      {content:'xxx', name: 'yyy'}
     ]
-  ,
-  5000
+
+    setTimeout ->
+      domTpl1.people [
+        {content:'xxx', name: 'yyyy'}
+        {content:'xxx', name: 'yyy'}
+        {content:'xxx', name: 'clyyy'}
+      ]
+    ,
+    5000
+
+  test2()
