@@ -66,10 +66,11 @@ tinywings = (tpl)->
 tpl = '''
   <div data-bind="text:text">
   </div>
+  <p data-bind="text:content"></p>
 '''
 
 tpl1 = '''
-  <div data-bind="foreach:people"><p data-bind="text:content"></p><p data-bind="text:name"></p></div>
+  <div data-bind="foreach:people"><p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>
 '''
 
 
@@ -78,7 +79,9 @@ window.onload = ->
   test1 = ->
     domTpl = tinywings tpl
     document.body.appendChild domTpl.frag.firstChild
-    domTpl.text('something like this')
+    document.body.appendChild domTpl.frag.firstChild.nextSibling
+    domTpl.text 'something like this'
+    domTpl.content 'more'
     setTimeout ->
       domTpl.text 'changed after 5s'
     ,
@@ -88,17 +91,17 @@ window.onload = ->
     domTpl1 = tinywings tpl1
     document.body.appendChild domTpl1.frag.firstChild
     domTpl1.people [
-      {content:'xxx', name: 'yyyy'}
-      {content:'xxx', name: 'yyy'}
+      {content:'xxx', name: 'yyyy', pens: []}
+      {content:'xxx', name: 'yyy' , pens: []}
     ]
 
     setTimeout ->
       domTpl1.people [
-        {content:'xxx', name: 'yyyy'}
-        {content:'xxx', name: 'yyy'}
-        {content:'xxx', name: 'clyyy'}
+        {content:'xxx', name: 'yyyy', pens: [{color:'red'}, {color: 'blue'}]}
+        {content:'xxx', name: 'yyy' , pens: []}
+        {content:'xxx', name: 'clyyy', pens:[]}
       ]
     ,
     5000
-
+  test1()
   test2()

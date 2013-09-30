@@ -85,9 +85,9 @@
     return tw;
   };
 
-  tpl = '<div data-bind="text:text">\n</div>';
+  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>';
 
-  tpl1 = '<div data-bind="foreach:people"><p data-bind="text:content"></p><p data-bind="text:name"></p></div>';
+  tpl1 = '<div data-bind="foreach:people"><p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>';
 
   window.onload = function() {
     var test1, test2;
@@ -95,7 +95,9 @@
       var domTpl;
       domTpl = tinywings(tpl);
       document.body.appendChild(domTpl.frag.firstChild);
+      document.body.appendChild(domTpl.frag.firstChild.nextSibling);
       domTpl.text('something like this');
+      domTpl.content('more');
       return setTimeout(function() {
         return domTpl.text('changed after 5s');
       }, 5000);
@@ -107,27 +109,39 @@
       domTpl1.people([
         {
           content: 'xxx',
-          name: 'yyyy'
+          name: 'yyyy',
+          pens: []
         }, {
           content: 'xxx',
-          name: 'yyy'
+          name: 'yyy',
+          pens: []
         }
       ]);
       return setTimeout(function() {
         return domTpl1.people([
           {
             content: 'xxx',
-            name: 'yyyy'
+            name: 'yyyy',
+            pens: [
+              {
+                color: 'red'
+              }, {
+                color: 'blue'
+              }
+            ]
           }, {
             content: 'xxx',
-            name: 'yyy'
+            name: 'yyy',
+            pens: []
           }, {
             content: 'xxx',
-            name: 'clyyy'
+            name: 'clyyy',
+            pens: []
           }
         ]);
       }, 5000);
     };
+    test1();
     return test2();
   };
 
