@@ -89,7 +89,7 @@ tinywings = (tpl)->
       parent = node.parentNode
       for match in matches
         [bind, attr] = /{{([^}]*)}}/.exec match
-        newNode = newNode.replace new RegExp(bind, 'g'), "<i data-bind='_text:#{attr}'></i>#{bind}<i></i>"
+        newNode = newNode.replace new RegExp(bind, 'g'), "<!-- data-bind='_text:#{attr}' -->#{bind}<!-- -->"
         # it.content
         firstAttr = attr.split('.')[0]
         tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
@@ -107,19 +107,21 @@ tinywings = (tpl)->
             tw.callbacks[firstAttr].push (val)->
               for atr in attrLink
                 val = val[atr]
-              nodes = parent.querySelectorAll("[data-bind='_text:#{attr}']")
+              nodes = parent.childNodes
               for node in nodes
-                node.nextSibling.data = val
-                log "text-refrash to #{node} with #{val}"
+                if node.data.indexOf("data-bind='_text:#{attr}'") > -1
+                  node.nextSibling.data = val
+                  log "text-refrash to #{node} with #{val}"
 
         # content
         else
           do (attr)->
             tw.callbacks[firstAttr].push (val)->
-              nodes = parent.querySelectorAll("[data-bind='_text:#{attr}']")
+              nodes = parent.childNodes
               for node in nodes
-                node.nextSibling.data = val
-                log "text-refrash to #{node} with #{val}"
+                if node.data.indexOf("data-bind='_text:#{attr}'") > -1
+                  node.nextSibling.data = val
+                  log "text-refrash to #{node} with #{val}"
       parent.innerHTML = newNode
 
     return

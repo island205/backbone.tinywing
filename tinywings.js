@@ -128,7 +128,7 @@
         for (_j = 0, _len1 = matches.length; _j < _len1; _j++) {
           match = matches[_j];
           _ref2 = /{{([^}]*)}}/.exec(match), bind = _ref2[0], attr = _ref2[1];
-          newNode = newNode.replace(new RegExp(bind, 'g'), "<i data-bind='_text:" + attr + "'></i>" + bind + "<i></i>");
+          newNode = newNode.replace(new RegExp(bind, 'g'), "<!-- data-bind='_text:" + attr + "' -->" + bind + "<!-- -->");
           firstAttr = attr.split('.')[0];
           tw.callbacks[firstAttr] = tw.callbacks[firstAttr] || [];
           _fn(firstAttr);
@@ -142,12 +142,16 @@
                   atr = attrLink[_k];
                   val = val[atr];
                 }
-                nodes = parent.querySelectorAll("[data-bind='_text:" + attr + "']");
+                nodes = parent.childNodes;
                 _results = [];
                 for (_l = 0, _len3 = nodes.length; _l < _len3; _l++) {
                   node = nodes[_l];
-                  node.nextSibling.data = val;
-                  _results.push(log("text-refrash to " + node + " with " + val));
+                  if (node.data.indexOf("data-bind='_text:" + attr + "'") > -1) {
+                    node.nextSibling.data = val;
+                    _results.push(log("text-refrash to " + node + " with " + val));
+                  } else {
+                    _results.push(void 0);
+                  }
                 }
                 return _results;
               });
@@ -156,12 +160,16 @@
             (function(attr) {
               return tw.callbacks[firstAttr].push(function(val) {
                 var nodes, _k, _len2, _results;
-                nodes = parent.querySelectorAll("[data-bind='_text:" + attr + "']");
+                nodes = parent.childNodes;
                 _results = [];
                 for (_k = 0, _len2 = nodes.length; _k < _len2; _k++) {
                   node = nodes[_k];
-                  node.nextSibling.data = val;
-                  _results.push(log("text-refrash to " + node + " with " + val));
+                  if (node.data.indexOf("data-bind='_text:" + attr + "'") > -1) {
+                    node.nextSibling.data = val;
+                    _results.push(log("text-refrash to " + node + " with " + val));
+                  } else {
+                    _results.push(void 0);
+                  }
                 }
                 return _results;
               });
