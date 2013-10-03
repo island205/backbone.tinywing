@@ -24,6 +24,7 @@ tinywings = (tpl)->
   frag = document.createElement 'div'
   frag.innerHTML = tpl
   tw.frag = frag
+  tw.callbacks = {}
   travel frag, (node, done)->
     if node.dataset?.bind
       bind = node.dataset.bind
@@ -32,24 +33,29 @@ tinywings = (tpl)->
         when 'text'
           log "text-bind to #{node} with #{attr}"
           # it.content
+          firstAttr = attr.split('.')[0]
+          tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
+          tw[firstAttr] = tw[firstAttr] or (val)->
+            for callback in tw.callbacks[firstAttr]
+              callback val
+            return
+
+          # it.content
           if attr.indexOf('.') > -1
             attrLink = attr.split '.'
             firstAttr = attrLink.shift()
-            tw.attrLinkCb = tw.attrLinkCb or {}
-            tw.attrLinkCb[firstAttr] = tw.attrLinkCb[firstAttr] or []
-            tw.attrLinkCb[firstAttr].push (val)->
+            tw.callbacks[firstAttr].push (val)->
               for atr in attrLink
                 val = val[atr]
               node.innerHTML = val
               log "text-refrash to #{node} with #{val}"
 
-            tw[firstAttr] = (val)->
-              for callback in tw.attrLinkCb[firstAttr]
-                callback val
+          # content
           else
-            tw[attr] = (val)->
+            tw.callbacks[firstAttr].push (val)->
               node.innerHTML = val
               log "text-refrash to #{node} with #{val}"
+
         when 'foreach'
           done()
           innerTpl = node.innerHTML
@@ -74,12 +80,32 @@ tinywings = (tpl)->
             return
     else if node.nodeType is 3 and /{{[^}]*}}/.test node.data
       [bind, attr] = /{{([^}]*)}}/.exec node.data
-      console.log bind, attr
       newNode = node.data.replace bind, "<i data-bind='_text:#{attr}'></i>#{bind}<i></i>"
       parent = node.parentNode
       parent.innerHTML = newNode
-      tw[attr] = (val)->
-        parent.querySelector("[data-bind='_text:#{attr}']").nextSibling.data = val
+      # it.content
+      firstAttr = attr.split('.')[0]
+      tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
+      tw[firstAttr] = tw[firstAttr] or (val)->
+        for callback in tw.callbacks[firstAttr]
+          callback val
+        return
+
+      # it.content
+      if attr.indexOf('.') > -1
+        attrLink = attr.split '.'
+        firstAttr = attrLink.shift()
+        tw.callbacks[firstAttr].push (val)->
+          for atr in attrLink
+            val = val[atr]
+          parent.querySelector("[data-bind='_text:#{attr}']").nextSibling.data = val
+          log "text-refrash to #{node} with #{val}"
+
+      # content
+      else
+        tw.callbacks[firstAttr].push (val)->
+          parent.querySelector("[data-bind='_text:#{attr}']").nextSibling.data = val
+          log "text-refrash to #{node} with #{val}"
 
     return
   log 'END BIND'
@@ -92,7 +118,8 @@ tpl = '''
   <div data-bind="text:text">
   </div>
   <p data-bind="text:content"></p>
-  <p>this is inline {{comment}} bind.</p>
+  <p>this is inline {{content}} bind.</p>
+  <p>this is inline {{it.content}} bind.</p>
 '''
 
 tpl1 = '''
@@ -114,9 +141,11 @@ window.onload = ->
     document.body.appendChild domTpl.frag.firstChild
     document.body.appendChild domTpl.frag.firstChild.nextSibling
     document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling
+    document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling
     domTpl.text 'something like this'
     domTpl.content 'more'
-    domTpl.comment 'comment'
+    domTpl.it
+      content: 'it.content'
 
   test2 = ->
     domTpl1 = tinywings tpl1
