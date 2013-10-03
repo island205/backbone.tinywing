@@ -72,6 +72,15 @@ tinywings = (tpl)->
                   if item[key]
                     innerDomTpl[key] item[key]
             return
+    else if node.nodeType is 3 and /{{[^}]*}}/.test node.data
+      [bind, attr] = /{{([^}]*)}}/.exec node.data
+      console.log bind, attr
+      newNode = node.data.replace bind, "<i data-bind='_text:#{attr}'></i>#{bind}<i></i>"
+      parent = node.parentNode
+      parent.innerHTML = newNode
+      tw[attr] = (val)->
+        parent.querySelector("[data-bind='_text:#{attr}']").nextSibling.data = val
+
     return
   log 'END BIND'
   tw
@@ -83,6 +92,7 @@ tpl = '''
   <div data-bind="text:text">
   </div>
   <p data-bind="text:content"></p>
+  <p>this is inline {{comment}} bind.</p>
 '''
 
 tpl1 = '''
@@ -103,8 +113,10 @@ window.onload = ->
     domTpl = tinywings tpl
     document.body.appendChild domTpl.frag.firstChild
     document.body.appendChild domTpl.frag.firstChild.nextSibling
+    document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling
     domTpl.text 'something like this'
     domTpl.content 'more'
+    domTpl.comment 'comment'
 
   test2 = ->
     domTpl1 = tinywings tpl1

@@ -38,7 +38,7 @@
     frag.innerHTML = tpl;
     tw.frag = frag;
     travel(frag, function(node, done) {
-      var attr, attrLink, bind, firstAttr, innerTpl, type, _ref, _ref1;
+      var attr, attrLink, bind, firstAttr, innerTpl, newNode, parent, type, _ref, _ref1, _ref2;
       if ((_ref = node.dataset) != null ? _ref.bind : void 0) {
         bind = node.dataset.bind;
         _ref1 = bind.split(':'), type = _ref1[0], attr = _ref1[1];
@@ -105,13 +105,22 @@
               }
             };
         }
+      } else if (node.nodeType === 3 && /{{[^}]*}}/.test(node.data)) {
+        _ref2 = /{{([^}]*)}}/.exec(node.data), bind = _ref2[0], attr = _ref2[1];
+        console.log(bind, attr);
+        newNode = node.data.replace(bind, "<i data-bind='_text:" + attr + "'></i>" + bind + "<i></i>");
+        parent = node.parentNode;
+        parent.innerHTML = newNode;
+        tw[attr] = function(val) {
+          return parent.querySelector("[data-bind='_text:" + attr + "']").nextSibling.data = val;
+        };
       }
     });
     log('END BIND');
     return tw;
   };
 
-  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>';
+  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{comment}} bind.</p>';
 
   tpl1 = '<div data-bind="foreach:people"><p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>';
 
@@ -124,8 +133,10 @@
       domTpl = tinywings(tpl);
       document.body.appendChild(domTpl.frag.firstChild);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling);
+      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling);
       domTpl.text('something like this');
-      return domTpl.content('more');
+      domTpl.content('more');
+      return domTpl.comment('comment');
     };
     test2 = function() {
       var domTpl1;
