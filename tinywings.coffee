@@ -79,33 +79,48 @@ tinywings = (tpl)->
                     innerDomTpl[key] item[key]
             return
     else if node.nodeType is 3 and /{{[^}]*}}/.test node.data
-      [bind, attr] = /{{([^}]*)}}/.exec node.data
-      newNode = node.data.replace bind, "<i data-bind='_text:#{attr}'></i>#{bind}<i></i>"
+      log "text-bind to #{node}"
+      matches = node.data.match /{{[^}]*}}/g
+      o = {}
+      for match in matches
+        o[match] = match
+      matches = Object.keys o
+      newNode = node.data
       parent = node.parentNode
+      for match in matches
+        [bind, attr] = /{{([^}]*)}}/.exec match
+        newNode = newNode.replace new RegExp(bind, 'g'), "<i data-bind='_text:#{attr}'></i>#{bind}<i></i>"
+        # it.content
+        firstAttr = attr.split('.')[0]
+        tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
+        do (firstAttr)->
+          tw[firstAttr] = tw[firstAttr] or (val)->
+            for callback in tw.callbacks[firstAttr]
+              callback val
+            return
+
+        # it.content
+        if attr.indexOf('.') > -1
+          attrLink = attr.split '.'
+          firstAttr = attrLink.shift()
+          do (attr)->
+            tw.callbacks[firstAttr].push (val)->
+              for atr in attrLink
+                val = val[atr]
+              nodes = parent.querySelectorAll("[data-bind='_text:#{attr}']")
+              for node in nodes
+                node.nextSibling.data = val
+                log "text-refrash to #{node} with #{val}"
+
+        # content
+        else
+          do (attr)->
+            tw.callbacks[firstAttr].push (val)->
+              nodes = parent.querySelectorAll("[data-bind='_text:#{attr}']")
+              for node in nodes
+                node.nextSibling.data = val
+                log "text-refrash to #{node} with #{val}"
       parent.innerHTML = newNode
-      # it.content
-      firstAttr = attr.split('.')[0]
-      tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
-      tw[firstAttr] = tw[firstAttr] or (val)->
-        for callback in tw.callbacks[firstAttr]
-          callback val
-        return
-
-      # it.content
-      if attr.indexOf('.') > -1
-        attrLink = attr.split '.'
-        firstAttr = attrLink.shift()
-        tw.callbacks[firstAttr].push (val)->
-          for atr in attrLink
-            val = val[atr]
-          parent.querySelector("[data-bind='_text:#{attr}']").nextSibling.data = val
-          log "text-refrash to #{node} with #{val}"
-
-      # content
-      else
-        tw.callbacks[firstAttr].push (val)->
-          parent.querySelector("[data-bind='_text:#{attr}']").nextSibling.data = val
-          log "text-refrash to #{node} with #{val}"
 
     return
   log 'END BIND'
@@ -119,7 +134,7 @@ tpl = '''
   </div>
   <p data-bind="text:content"></p>
   <p>this is inline {{content}} bind.</p>
-  <p>this is inline {{it.content}} bind.</p>
+  <p>this is inline {{it.content}} bind and {{content}} bind.</p>
 '''
 
 tpl1 = '''

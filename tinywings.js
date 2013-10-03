@@ -39,7 +39,7 @@
     tw.frag = frag;
     tw.callbacks = {};
     travel(frag, function(node, done) {
-      var attr, attrLink, bind, firstAttr, innerTpl, newNode, parent, type, _ref, _ref1, _ref2;
+      var attr, attrLink, bind, firstAttr, innerTpl, match, matches, newNode, o, parent, type, _fn, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       if ((_ref = node.dataset) != null ? _ref.bind : void 0) {
         bind = node.dataset.bind;
         _ref1 = bind.split(':'), type = _ref1[0], attr = _ref1[1];
@@ -105,45 +105,77 @@
             };
         }
       } else if (node.nodeType === 3 && /{{[^}]*}}/.test(node.data)) {
-        _ref2 = /{{([^}]*)}}/.exec(node.data), bind = _ref2[0], attr = _ref2[1];
-        newNode = node.data.replace(bind, "<i data-bind='_text:" + attr + "'></i>" + bind + "<i></i>");
-        parent = node.parentNode;
-        parent.innerHTML = newNode;
-        firstAttr = attr.split('.')[0];
-        tw.callbacks[firstAttr] = tw.callbacks[firstAttr] || [];
-        tw[firstAttr] = tw[firstAttr] || function(val) {
-          var callback, _i, _len, _ref3;
-          _ref3 = tw.callbacks[firstAttr];
-          for (_i = 0, _len = _ref3.length; _i < _len; _i++) {
-            callback = _ref3[_i];
-            callback(val);
-          }
-        };
-        if (attr.indexOf('.') > -1) {
-          attrLink = attr.split('.');
-          firstAttr = attrLink.shift();
-          tw.callbacks[firstAttr].push(function(val) {
-            var atr, _i, _len;
-            for (_i = 0, _len = attrLink.length; _i < _len; _i++) {
-              atr = attrLink[_i];
-              val = val[atr];
-            }
-            parent.querySelector("[data-bind='_text:" + attr + "']").nextSibling.data = val;
-            return log("text-refrash to " + node + " with " + val);
-          });
-        } else {
-          tw.callbacks[firstAttr].push(function(val) {
-            parent.querySelector("[data-bind='_text:" + attr + "']").nextSibling.data = val;
-            return log("text-refrash to " + node + " with " + val);
-          });
+        log("text-bind to " + node);
+        matches = node.data.match(/{{[^}]*}}/g);
+        o = {};
+        for (_i = 0, _len = matches.length; _i < _len; _i++) {
+          match = matches[_i];
+          o[match] = match;
         }
+        matches = Object.keys(o);
+        newNode = node.data;
+        parent = node.parentNode;
+        _fn = function(firstAttr) {
+          return tw[firstAttr] = tw[firstAttr] || function(val) {
+            var callback, _k, _len2, _ref2;
+            _ref2 = tw.callbacks[firstAttr];
+            for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+              callback = _ref2[_k];
+              callback(val);
+            }
+          };
+        };
+        for (_j = 0, _len1 = matches.length; _j < _len1; _j++) {
+          match = matches[_j];
+          _ref2 = /{{([^}]*)}}/.exec(match), bind = _ref2[0], attr = _ref2[1];
+          newNode = newNode.replace(new RegExp(bind, 'g'), "<i data-bind='_text:" + attr + "'></i>" + bind + "<i></i>");
+          firstAttr = attr.split('.')[0];
+          tw.callbacks[firstAttr] = tw.callbacks[firstAttr] || [];
+          _fn(firstAttr);
+          if (attr.indexOf('.') > -1) {
+            attrLink = attr.split('.');
+            firstAttr = attrLink.shift();
+            (function(attr) {
+              return tw.callbacks[firstAttr].push(function(val) {
+                var atr, nodes, _k, _l, _len2, _len3, _results;
+                for (_k = 0, _len2 = attrLink.length; _k < _len2; _k++) {
+                  atr = attrLink[_k];
+                  val = val[atr];
+                }
+                nodes = parent.querySelectorAll("[data-bind='_text:" + attr + "']");
+                _results = [];
+                for (_l = 0, _len3 = nodes.length; _l < _len3; _l++) {
+                  node = nodes[_l];
+                  node.nextSibling.data = val;
+                  _results.push(log("text-refrash to " + node + " with " + val));
+                }
+                return _results;
+              });
+            })(attr);
+          } else {
+            (function(attr) {
+              return tw.callbacks[firstAttr].push(function(val) {
+                var nodes, _k, _len2, _results;
+                nodes = parent.querySelectorAll("[data-bind='_text:" + attr + "']");
+                _results = [];
+                for (_k = 0, _len2 = nodes.length; _k < _len2; _k++) {
+                  node = nodes[_k];
+                  node.nextSibling.data = val;
+                  _results.push(log("text-refrash to " + node + " with " + val));
+                }
+                return _results;
+              });
+            })(attr);
+          }
+        }
+        parent.innerHTML = newNode;
       }
     });
     log('END BIND');
     return tw;
   };
 
-  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{content}} bind.</p>\n<p>this is inline {{it.content}} bind.</p>';
+  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{content}} bind.</p>\n<p>this is inline {{it.content}} bind and {{content}} bind.</p>';
 
   tpl1 = '<div data-bind="foreach:people"><p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>';
 
