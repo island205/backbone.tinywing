@@ -20,6 +20,31 @@ travel = (node, callback)->
     node = next
   return
 
+bind = (tw, attr, updater)->
+  firstAttr = attr.split('.')[0]
+  tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
+  tw[firstAttr] = tw[firstAttr] or (val, parent)->
+    for callback in tw.callbacks[firstAttr]
+      callback val, parent
+    return
+
+  # it.content
+  if attr.indexOf('.') > -1
+    attrLink = attr.split '.'
+    firstAttr = attrLink.shift()
+    tw.callbacks[firstAttr].push (val, parent)->
+      for atr in attrLink
+        val = val[atr]
+      updater val, parent
+      return
+
+  # content
+  else
+    tw.callbacks[firstAttr].push (val, parent)->
+      updater val, parent
+      return
+  return
+
 tinywings = (tpl)->
   log 'START BIND'
   tw = {}
@@ -29,34 +54,14 @@ tinywings = (tpl)->
   tw.callbacks = {}
   travel frag, (node, done)->
     if node.dataset?.bind
-      bind = node.dataset.bind
-      [type, attr]= bind.split ':'
+      binder = node.dataset.bind
+      [type, attr]= binder.split ':'
       switch type
         when 'text'
           log "text-bind to #{node} with #{attr}"
-          # it.content
-          firstAttr = attr.split('.')[0]
-          tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
-          tw[firstAttr] = tw[firstAttr] or (val, parent)->
-            for callback in tw.callbacks[firstAttr]
-              callback val, parent
-            return
-
-          # it.content
-          if attr.indexOf('.') > -1
-            attrLink = attr.split '.'
-            firstAttr = attrLink.shift()
-            tw.callbacks[firstAttr].push (val)->
-              for atr in attrLink
-                val = val[atr]
-              node.innerHTML = val
-              log "text-refrash to #{node} with #{val}"
-
-          # content
-          else
-            tw.callbacks[firstAttr].push (val)->
-              node.innerHTML = val
-              log "text-refrash to #{node} with #{val}"
+          bind tw, attr, (val)->
+            node.innerHTML = val
+            log "text-refrash to #{node} with #{val}"
 
         when 'foreach'
           done()
@@ -90,43 +95,19 @@ tinywings = (tpl)->
       newData = node.data
       parent = node.parentNode
       for match in matches
-        [bind, attr] = /{{([^}]*)}}/.exec match
-        newData = newData.replace new RegExp(bind, 'g'), "<!-- data-bind='_text:#{attr}' -->#{bind}<!-- -->"
+        [binder, attr] = /{{([^}]*)}}/.exec match
+        newData = newData.replace new RegExp(binder, 'g'), "<!-- data-bind='_text:#{attr}' -->#{binder}<!-- -->"
         # it.content
-        firstAttr = attr.split('.')[0]
-        tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
-        do (firstAttr)->
-          tw[firstAttr] = tw[firstAttr] or (val, parent)->
-            for callback in tw.callbacks[firstAttr]
-              callback val, parent
+        do (attr, parent)->
+          bind tw, attr, (val, p)->
+            p or= parent
+            nodes = p.childNodes
+            for node in nodes
+              if node.data? and node.data.indexOf("data-bind='_text:#{attr}'") > -1
+                node.nextSibling.data = val
+                log "text-refrash to #{node} with #{val}"
             return
 
-        # it.content
-        if attr.indexOf('.') > -1
-          attrLink = attr.split '.'
-          firstAttr = attrLink.shift()
-          do (attr, parent)->
-            tw.callbacks[firstAttr].push (val, p)->
-              p or= parent
-              for atr in attrLink
-                val = val[atr]
-              nodes = p.childNodes
-              for node in nodes
-                if node.data? and node.data.indexOf("data-bind='_text:#{attr}'") > -1
-                  node.nextSibling.data = val
-                  log "text-refrash to #{node} with #{val}"
-
-        # content
-        else
-          do (attr, parent)->
-            tw.callbacks[firstAttr].push (val, p)->
-              p or= parent
-              nodes = p.childNodes
-              for node in nodes
-                if node.data? and node.data.indexOf("data-bind='_text:#{attr}'") > -1
-                  node.nextSibling.data = val
-                  log "text-refrash to #{node} with #{val}"
-              return
       newNode = document.createElement('div')
       newNode.innerHTML = newData
       first = child = newNode.firstChild
@@ -154,6 +135,7 @@ tpl = '''
   <p data-bind="text:content"></p>
   <p>this is inline {{content}} bind.</p>
   <p>this is inline {{it.content}} bind and {{content}} bind.</p>
+  <p data-bind="with:it"><span data-bind="text:content"></span></p>
 '''
 
 tpl1 = '''
