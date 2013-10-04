@@ -12,22 +12,21 @@
   };
 
   travel = function(node, callback) {
-    var done, stop, _results;
+    var done, next, stop;
     node = node.firstChild;
     stop = false;
     done = function() {
       return stop = true;
     };
-    _results = [];
     while (node) {
       log("travel " + node);
+      next = node.nextSibling;
       callback(node, done);
       if (!stop) {
         travel(node, callback);
       }
-      _results.push(node = node.nextSibling);
+      node = next;
     }
-    return _results;
   };
 
   tinywings = function(tpl) {
@@ -39,7 +38,7 @@
     tw.frag = frag;
     tw.callbacks = {};
     travel(frag, function(node, done) {
-      var attr, attrLink, bind, firstAttr, innerTpl, match, matches, newNode, o, parent, type, _fn, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+      var attr, attrLink, bind, child, first, firstAttr, innerTpl, last, match, matches, newData, newNode, next, o, parent, type, _fn, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       if ((_ref = node.dataset) != null ? _ref.bind : void 0) {
         bind = node.dataset.bind;
         _ref1 = bind.split(':'), type = _ref1[0], attr = _ref1[1];
@@ -48,12 +47,12 @@
             log("text-bind to " + node + " with " + attr);
             firstAttr = attr.split('.')[0];
             tw.callbacks[firstAttr] = tw.callbacks[firstAttr] || [];
-            tw[firstAttr] = tw[firstAttr] || function(val) {
+            tw[firstAttr] = tw[firstAttr] || function(val, parent) {
               var callback, _i, _len, _ref2;
               _ref2 = tw.callbacks[firstAttr];
               for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
                 callback = _ref2[_i];
-                callback(val);
+                callback(val, parent);
               }
             };
             if (attr.indexOf('.') > -1) {
@@ -97,7 +96,7 @@
                   value = innerDomTpl[key];
                   if (key !== 'frag') {
                     if (item[key]) {
-                      innerDomTpl[key](item[key]);
+                      innerDomTpl[key](item[key], node);
                     }
                   }
                 }
@@ -113,40 +112,41 @@
           o[match] = match;
         }
         matches = Object.keys(o);
-        newNode = node.data;
+        newData = node.data;
         parent = node.parentNode;
         _fn = function(firstAttr) {
-          return tw[firstAttr] = tw[firstAttr] || function(val) {
+          return tw[firstAttr] = tw[firstAttr] || function(val, parent) {
             var callback, _k, _len2, _ref2;
             _ref2 = tw.callbacks[firstAttr];
             for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
               callback = _ref2[_k];
-              callback(val);
+              callback(val, parent);
             }
           };
         };
         for (_j = 0, _len1 = matches.length; _j < _len1; _j++) {
           match = matches[_j];
           _ref2 = /{{([^}]*)}}/.exec(match), bind = _ref2[0], attr = _ref2[1];
-          newNode = newNode.replace(new RegExp(bind, 'g'), "<!-- data-bind='_text:" + attr + "' -->" + bind + "<!-- -->");
+          newData = newData.replace(new RegExp(bind, 'g'), "<!-- data-bind='_text:" + attr + "' -->" + bind + "<!-- -->");
           firstAttr = attr.split('.')[0];
           tw.callbacks[firstAttr] = tw.callbacks[firstAttr] || [];
           _fn(firstAttr);
           if (attr.indexOf('.') > -1) {
             attrLink = attr.split('.');
             firstAttr = attrLink.shift();
-            (function(attr) {
-              return tw.callbacks[firstAttr].push(function(val) {
+            (function(attr, parent) {
+              return tw.callbacks[firstAttr].push(function(val, p) {
                 var atr, nodes, _k, _l, _len2, _len3, _results;
+                p || (p = parent);
                 for (_k = 0, _len2 = attrLink.length; _k < _len2; _k++) {
                   atr = attrLink[_k];
                   val = val[atr];
                 }
-                nodes = parent.childNodes;
+                nodes = p.childNodes;
                 _results = [];
                 for (_l = 0, _len3 = nodes.length; _l < _len3; _l++) {
                   node = nodes[_l];
-                  if (node.data.indexOf("data-bind='_text:" + attr + "'") > -1) {
+                  if ((node.data != null) && node.data.indexOf("data-bind='_text:" + attr + "'") > -1) {
                     node.nextSibling.data = val;
                     _results.push(log("text-refrash to " + node + " with " + val));
                   } else {
@@ -155,28 +155,41 @@
                 }
                 return _results;
               });
-            })(attr);
+            })(attr, parent);
           } else {
-            (function(attr) {
-              return tw.callbacks[firstAttr].push(function(val) {
-                var nodes, _k, _len2, _results;
-                nodes = parent.childNodes;
-                _results = [];
+            (function(attr, parent) {
+              return tw.callbacks[firstAttr].push(function(val, p) {
+                var nodes, _k, _len2;
+                p || (p = parent);
+                nodes = p.childNodes;
                 for (_k = 0, _len2 = nodes.length; _k < _len2; _k++) {
                   node = nodes[_k];
-                  if (node.data.indexOf("data-bind='_text:" + attr + "'") > -1) {
+                  if ((node.data != null) && node.data.indexOf("data-bind='_text:" + attr + "'") > -1) {
                     node.nextSibling.data = val;
-                    _results.push(log("text-refrash to " + node + " with " + val));
-                  } else {
-                    _results.push(void 0);
+                    log("text-refrash to " + node + " with " + val);
                   }
                 }
-                return _results;
               });
-            })(attr);
+            })(attr, parent);
           }
         }
-        parent.innerHTML = newNode;
+        newNode = document.createElement('div');
+        newNode.innerHTML = newData;
+        first = child = newNode.firstChild;
+        while (child) {
+          next = child.nextSibling;
+          if (child === first) {
+            parent.replaceChild(child, node);
+          } else {
+            if (parent.lastChild === last) {
+              parent.appendChild(child);
+            } else {
+              parent.insertBefore(child, last.nextSibling);
+            }
+          }
+          last = child;
+          child = next;
+        }
       }
     });
     log('END BIND');
@@ -185,7 +198,7 @@
 
   tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{content}} bind.</p>\n<p>this is inline {{it.content}} bind and {{content}} bind.</p>';
 
-  tpl1 = '<div data-bind="foreach:people"><p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>';
+  tpl1 = '<div data-bind="foreach:people">this is {{content}}  and {{name}}.<p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>';
 
   tpl2 = '<div data-bind="text:it.text">\n</div>\n<p data-bind="text:it.content"></p>\n<p data-bind="text:it.content"></p>\n<p data-bind="text:that.content"></p>';
 
@@ -235,9 +248,7 @@
         content: 'that.xxxx'
       });
     };
-    test1();
-    test2();
-    return test3();
+    return test2();
   };
 
 }).call(this);

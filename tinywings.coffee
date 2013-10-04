@@ -13,10 +13,12 @@ travel = (node, callback)->
     stop = true
   while node
     log "travel #{node}"
+    next = node.nextSibling
     callback node, done
     if not stop
       travel node, callback
-    node = node.nextSibling
+    node = next
+  return
 
 tinywings = (tpl)->
   log 'START BIND'
@@ -35,9 +37,9 @@ tinywings = (tpl)->
           # it.content
           firstAttr = attr.split('.')[0]
           tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
-          tw[firstAttr] = tw[firstAttr] or (val)->
+          tw[firstAttr] = tw[firstAttr] or (val, parent)->
             for callback in tw.callbacks[firstAttr]
-              callback val
+              callback val, parent
             return
 
           # it.content
@@ -76,7 +78,7 @@ tinywings = (tpl)->
               for own key, value of innerDomTpl
                 if key isnt 'frag'
                   if item[key]
-                    innerDomTpl[key] item[key]
+                    innerDomTpl[key] item[key], node
             return
     else if node.nodeType is 3 and /{{[^}]*}}/.test node.data
       log "text-bind to #{node}"
@@ -85,45 +87,60 @@ tinywings = (tpl)->
       for match in matches
         o[match] = match
       matches = Object.keys o
-      newNode = node.data
+      newData = node.data
       parent = node.parentNode
       for match in matches
         [bind, attr] = /{{([^}]*)}}/.exec match
-        newNode = newNode.replace new RegExp(bind, 'g'), "<!-- data-bind='_text:#{attr}' -->#{bind}<!-- -->"
+        newData = newData.replace new RegExp(bind, 'g'), "<!-- data-bind='_text:#{attr}' -->#{bind}<!-- -->"
         # it.content
         firstAttr = attr.split('.')[0]
         tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
         do (firstAttr)->
-          tw[firstAttr] = tw[firstAttr] or (val)->
+          tw[firstAttr] = tw[firstAttr] or (val, parent)->
             for callback in tw.callbacks[firstAttr]
-              callback val
+              callback val, parent
             return
 
         # it.content
         if attr.indexOf('.') > -1
           attrLink = attr.split '.'
           firstAttr = attrLink.shift()
-          do (attr)->
-            tw.callbacks[firstAttr].push (val)->
+          do (attr, parent)->
+            tw.callbacks[firstAttr].push (val, p)->
+              p or= parent
               for atr in attrLink
                 val = val[atr]
-              nodes = parent.childNodes
+              nodes = p.childNodes
               for node in nodes
-                if node.data.indexOf("data-bind='_text:#{attr}'") > -1
+                if node.data? and node.data.indexOf("data-bind='_text:#{attr}'") > -1
                   node.nextSibling.data = val
                   log "text-refrash to #{node} with #{val}"
 
         # content
         else
-          do (attr)->
-            tw.callbacks[firstAttr].push (val)->
-              nodes = parent.childNodes
+          do (attr, parent)->
+            tw.callbacks[firstAttr].push (val, p)->
+              p or= parent
+              nodes = p.childNodes
               for node in nodes
-                if node.data.indexOf("data-bind='_text:#{attr}'") > -1
+                if node.data? and node.data.indexOf("data-bind='_text:#{attr}'") > -1
                   node.nextSibling.data = val
                   log "text-refrash to #{node} with #{val}"
-      parent.innerHTML = newNode
-
+              return
+      newNode = document.createElement('div')
+      newNode.innerHTML = newData
+      first = child = newNode.firstChild
+      while child
+        next = child.nextSibling
+        if child is first
+          parent.replaceChild child, node
+        else
+          if parent.lastChild is last
+            parent.appendChild child
+          else
+            parent.insertBefore child, last.nextSibling
+        last = child
+        child = next
     return
   log 'END BIND'
   tw
@@ -140,7 +157,7 @@ tpl = '''
 '''
 
 tpl1 = '''
-  <div data-bind="foreach:people"><p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>
+  <div data-bind="foreach:people">this is {{content}}  and {{name}}.<p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>
 '''
 
 tpl2 = '''
@@ -185,6 +202,6 @@ window.onload = ->
     domTpl.that
       content:'that.xxxx'
 
-  test1()
+  #test1()
   test2()
-  test3()
+  #test3()
