@@ -33,24 +33,24 @@
     var attrLink, firstAttr;
     firstAttr = attr.split('.')[0];
     tw.updaters[firstAttr] = tw.updaters[firstAttr] || [];
-    tw[firstAttr] = tw[firstAttr] || function(val, parent) {
+    tw[firstAttr] = tw[firstAttr] || function(val, o, parent) {
       var updater, _i, _len, _ref;
       _ref = tw.updaters[firstAttr];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         updater = _ref[_i];
-        updater(val, parent);
+        updater(val, o, parent);
       }
     };
     if (attr.indexOf('.') > -1) {
       attrLink = attr.split('.');
       firstAttr = attrLink.shift();
-      tw.updaters[firstAttr].push(function(val, parent) {
+      tw.updaters[firstAttr].push(function(val, o, parent) {
         var atr, _i, _len;
         for (_i = 0, _len = attrLink.length; _i < _len; _i++) {
           atr = attrLink[_i];
           val = val[atr];
         }
-        up(val, parent);
+        up(val, o, parent);
       });
     } else {
       tw.updaters[firstAttr].push(up);
@@ -74,8 +74,66 @@
           case 'text':
             log("text-bind to " + node + " with " + attr);
             bind(tw, attr, function(val) {
-              node.innerHTML = val;
+              node.innerHTML = val + '';
               return log("text-refrash to " + node + " with " + val);
+            });
+            break;
+          case 'if':
+            done();
+            innerTpl = node.innerHTML;
+            log("if-bind to " + node + " with " + attr);
+            bind(tw, attr, function(val, o) {
+              var child, innerDomTpl, key, next, value;
+              node.innerHTML = '';
+              log("if-refrash to " + node + " with " + val);
+              if (!val) {
+                return;
+              }
+              innerDomTpl = tinywings(innerTpl);
+              child = innerDomTpl.frag.firstChild;
+              while (child) {
+                next = child.nextSibling;
+                node.appendChild(child);
+                child = next;
+              }
+              for (key in innerDomTpl) {
+                if (!__hasProp.call(innerDomTpl, key)) continue;
+                value = innerDomTpl[key];
+                if (key !== 'frag') {
+                  if (o[key] != null) {
+                    innerDomTpl[key](o[key], o, node);
+                  }
+                }
+              }
+            });
+            break;
+          case 'ifnot':
+            done();
+            innerTpl = node.innerHTML;
+            log("if-bind to " + node + " with " + attr);
+            bind(tw, attr, function(val, o) {
+              var child, innerDomTpl, key, next, value;
+              node.innerHTML = '';
+              log("if-refrash to " + node + " with " + val);
+              if (!!val) {
+                return;
+              }
+              innerDomTpl = tinywings(innerTpl);
+              child = innerDomTpl.frag.firstChild;
+              while (child) {
+                next = child.nextSibling;
+                node.appendChild(child);
+                child = next;
+              }
+              for (key in innerDomTpl) {
+                if (!__hasProp.call(innerDomTpl, key)) continue;
+                value = innerDomTpl[key];
+                if (key !== 'frag') {
+                  if (o[key] != null) {
+                    innerDomTpl[key](o[key], o, node);
+                  }
+                }
+              }
             });
             break;
           case 'with':
@@ -97,8 +155,8 @@
                 if (!__hasProp.call(innerDomTpl, key)) continue;
                 value = innerDomTpl[key];
                 if (key !== 'frag') {
-                  if (val[key]) {
-                    innerDomTpl[key](val[key], node);
+                  if (val[key] != null) {
+                    innerDomTpl[key](val[key], val, node);
                   }
                 }
               }
@@ -126,7 +184,7 @@
                   value = innerDomTpl[key];
                   if (key !== 'frag') {
                     if (item[key]) {
-                      innerDomTpl[key](item[key], node);
+                      innerDomTpl[key](item[key], item, node);
                     }
                   }
                 }
@@ -145,7 +203,7 @@
         newData = node.data;
         parent = node.parentNode;
         _fn = function(attr, parent) {
-          return bind(tw, attr, function(val, p) {
+          return bind(tw, attr, function(val, o, p) {
             var nodes, _k, _len2;
             p || (p = parent);
             nodes = p.childNodes;
@@ -187,7 +245,7 @@
     return tw;
   };
 
-  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{content}} bind.</p>\n<p>this is inline {{it.content}} bind and {{content}} bind.</p>\n<p data-bind="with:it"><span data-bind="text:content"></span></p>';
+  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{content}} bind.</p>\n<p>this is inline {{it.content}} bind and {{content}} bind.</p>\n<p data-bind="with:it"><span data-bind="text:content"></span></p>\n<p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>\n<p data-bind="ifnot:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is false</p>';
 
   tpl1 = '<div data-bind="foreach:people">this is {{content}}  and {{name}}.<p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>';
 
@@ -196,51 +254,69 @@
   window.onload = function() {
     var test1, test2, test3;
     test1 = function() {
-      var domTpl;
+      var domTpl, o;
       domTpl = tinywings(tpl);
       document.body.appendChild(domTpl.frag.firstChild);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling);
-      domTpl.text('something like this');
-      domTpl.content('more');
-      return domTpl.it({
-        content: 'it.content'
-      });
+      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling.nextSibling);
+      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling.nextSibling.nextSibling);
+      o = {
+        text: 'something like this',
+        content: 'more',
+        showIt: false,
+        it: {
+          content: 'it.content'
+        }
+      };
+      domTpl.text(o.text, o);
+      domTpl.content(o.content, o);
+      domTpl.it(o.it, o);
+      return domTpl.showIt(o.showIt, o);
     };
     test2 = function() {
-      var domTpl1;
+      var domTpl1, o;
       domTpl1 = tinywings(tpl1);
       document.body.appendChild(domTpl1.frag.firstChild);
-      return domTpl1.people([
-        {
-          content: 'xxx',
-          name: 'yyyy',
-          pens: []
-        }, {
-          content: 'xxx',
-          name: 'yyy',
-          pens: []
-        }
-      ]);
+      o = {
+        people: [
+          {
+            content: 'xxx',
+            name: 'yyyy',
+            pens: []
+          }, {
+            content: 'xxx',
+            name: 'yyy',
+            pens: []
+          }
+        ]
+      };
+      return domTpl1.people(o.people, o);
     };
     test3 = function() {
-      var domTpl;
+      var domTpl, o;
       domTpl = tinywings(tpl2);
       document.body.appendChild(domTpl.frag.firstChild);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling);
-      domTpl.it({
-        text: 'it.xxxx',
-        content: 'it.xxxx'
-      });
-      return domTpl.that({
-        content: 'that.xxxx'
-      });
+      o = {
+        it: {
+          text: 'it.xxxx',
+          content: 'it.xxxxxx'
+        },
+        that: {
+          content: 'that.xxxxx'
+        }
+      };
+      domTpl.it(o.it, o);
+      return domTpl.that(o.that, o);
     };
-    return test1();
+    test1();
+    test2();
+    return test3();
   };
 
 }).call(this);

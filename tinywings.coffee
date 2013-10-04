@@ -23,19 +23,19 @@ travel = (node, callback)->
 bind = (tw, attr, up)->
   firstAttr = attr.split('.')[0]
   tw.updaters[firstAttr] = tw.updaters[firstAttr] or []
-  tw[firstAttr] = tw[firstAttr] or (val, parent)->
+  tw[firstAttr] = tw[firstAttr] or (val, o, parent)->
     for updater in tw.updaters[firstAttr]
-      updater val, parent
+      updater val, o, parent
     return
 
   # it.content
   if attr.indexOf('.') > -1
     attrLink = attr.split '.'
     firstAttr = attrLink.shift()
-    tw.updaters[firstAttr].push (val, parent)->
+    tw.updaters[firstAttr].push (val, o, parent)->
       for atr in attrLink
         val = val[atr]
-      up val, parent
+      up val, o, parent
       return
 
   # content
@@ -58,8 +58,58 @@ tinywings = (tpl)->
         when 'text'
           log "text-bind to #{node} with #{attr}"
           bind tw, attr, (val)->
-            node.innerHTML = val
+            node.innerHTML = val + ''
             log "text-refrash to #{node} with #{val}"
+
+        when 'if'
+          done()
+          innerTpl = node.innerHTML
+          log "if-bind to #{node} with #{attr}"
+          bind tw, attr, (val, o)->
+            node.innerHTML = ''
+            log "if-refrash to #{node} with #{val}"
+            if not val
+              return
+
+            innerDomTpl = tinywings innerTpl
+
+            # copy children elements
+            child = innerDomTpl.frag.firstChild
+            while child
+              next = child.nextSibling
+              node.appendChild child
+              child = next
+
+            for own key, value of innerDomTpl
+              if key isnt 'frag'
+                if o[key]?
+                  innerDomTpl[key] o[key], o, node
+            return
+
+        when 'ifnot'
+          done()
+          innerTpl = node.innerHTML
+          log "if-bind to #{node} with #{attr}"
+          bind tw, attr, (val, o)->
+            node.innerHTML = ''
+            log "if-refrash to #{node} with #{val}"
+            if not not val
+              return
+
+            innerDomTpl = tinywings innerTpl
+
+            # copy children elements
+            child = innerDomTpl.frag.firstChild
+            while child
+              next = child.nextSibling
+              node.appendChild child
+              child = next
+
+            for own key, value of innerDomTpl
+              if key isnt 'frag'
+                if o[key]?
+                  innerDomTpl[key] o[key], o, node
+            return
 
         when 'with'
           done()
@@ -79,8 +129,8 @@ tinywings = (tpl)->
 
             for own key, value of innerDomTpl
               if key isnt 'frag'
-                if val[key]
-                  innerDomTpl[key] val[key], node
+                if val[key]?
+                  innerDomTpl[key] val[key], val, node
             return
 
         when 'foreach'
@@ -103,7 +153,7 @@ tinywings = (tpl)->
               for own key, value of innerDomTpl
                 if key isnt 'frag'
                   if item[key]
-                    innerDomTpl[key] item[key], node
+                    innerDomTpl[key] item[key], item, node
             return
     else if node.nodeType is 3 and /{{[^}]*}}/.test node.data
       log "text-bind to #{node}"
@@ -119,7 +169,7 @@ tinywings = (tpl)->
         newData = newData.replace new RegExp(binder, 'g'), "<!-- data-bind='_text:#{attr}' -->#{binder}<!-- -->"
         # it.content
         do (attr, parent)->
-          bind tw, attr, (val, p)->
+          bind tw, attr, (val, o, p)->
             p or= parent
             nodes = p.childNodes
             for node in nodes
@@ -156,6 +206,8 @@ tpl = '''
   <p>this is inline {{content}} bind.</p>
   <p>this is inline {{it.content}} bind and {{content}} bind.</p>
   <p data-bind="with:it"><span data-bind="text:content"></span></p>
+  <p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>
+  <p data-bind="ifnot:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is false</p>
 '''
 
 tpl1 = '''
@@ -179,18 +231,28 @@ window.onload = ->
     document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling
     document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling
     document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling
-    domTpl.text 'something like this'
-    domTpl.content 'more'
-    domTpl.it
-      content: 'it.content'
+    document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling.nextSibling
+    document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling.nextSibling.nextSibling
+    o =
+      text: 'something like this'
+      content: 'more'
+      showIt: false
+      it:
+        content: 'it.content'
+    domTpl.text o.text, o
+    domTpl.content o.content, o
+    domTpl.it o.it, o
+    domTpl.showIt o.showIt, o
 
   test2 = ->
     domTpl1 = tinywings tpl1
     document.body.appendChild domTpl1.frag.firstChild
-    domTpl1.people [
-      {content:'xxx', name: 'yyyy', pens: []}
-      {content:'xxx', name: 'yyy' , pens: []}
-    ]
+    o =
+      people:[
+        {content:'xxx', name: 'yyyy', pens: []},
+        {content:'xxx', name: 'yyy' , pens: []}
+      ]
+    domTpl1.people o.people, o
 
 
   test3 = ->
@@ -199,12 +261,15 @@ window.onload = ->
     document.body.appendChild domTpl.frag.firstChild.nextSibling
     document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling
     document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling
-    domTpl.it
-      text:'it.xxxx'
-      content: 'it.xxxx'
-    domTpl.that
-      content:'that.xxxx'
+    o =
+      it:
+        text:'it.xxxx',
+        content: 'it.xxxxxx'
+      that:
+        content: 'that.xxxxx'
+    domTpl.it o.it, o
+    domTpl.that o.that, o
 
   test1()
-  #test2()
-  #test3()
+  test2()
+  test3()
