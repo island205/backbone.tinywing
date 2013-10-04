@@ -32,19 +32,19 @@
   bind = function(tw, attr, updater) {
     var attrLink, firstAttr;
     firstAttr = attr.split('.')[0];
-    tw.callbacks[firstAttr] = tw.callbacks[firstAttr] || [];
+    tw.updaters[firstAttr] = tw.updaters[firstAttr] || [];
     tw[firstAttr] = tw[firstAttr] || function(val, parent) {
-      var callback, _i, _len, _ref;
-      _ref = tw.callbacks[firstAttr];
+      var _i, _len, _ref;
+      _ref = tw.updaters[firstAttr];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        callback = _ref[_i];
-        callback(val, parent);
+        updater = _ref[_i];
+        updater(val, parent);
       }
     };
     if (attr.indexOf('.') > -1) {
       attrLink = attr.split('.');
       firstAttr = attrLink.shift();
-      tw.callbacks[firstAttr].push(function(val, parent) {
+      tw.updaters[firstAttr].push(function(val, parent) {
         var atr, _i, _len;
         for (_i = 0, _len = attrLink.length; _i < _len; _i++) {
           atr = attrLink[_i];
@@ -53,9 +53,7 @@
         updater(val, parent);
       });
     } else {
-      tw.callbacks[firstAttr].push(function(val, parent) {
-        updater(val, parent);
-      });
+      tw.updaters[firstAttr].push(updater);
     }
   };
 
@@ -66,7 +64,7 @@
     frag = document.createElement('div');
     frag.innerHTML = tpl;
     tw.frag = frag;
-    tw.callbacks = {};
+    tw.updaters = {};
     travel(frag, function(node, done) {
       var attr, binder, child, first, innerTpl, last, match, matches, newData, newNode, next, o, parent, type, _fn, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       if ((_ref = node.dataset) != null ? _ref.bind : void 0) {

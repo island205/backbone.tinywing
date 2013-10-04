@@ -22,17 +22,17 @@ travel = (node, callback)->
 
 bind = (tw, attr, updater)->
   firstAttr = attr.split('.')[0]
-  tw.callbacks[firstAttr] = tw.callbacks[firstAttr] or []
+  tw.updaters[firstAttr] = tw.updaters[firstAttr] or []
   tw[firstAttr] = tw[firstAttr] or (val, parent)->
-    for callback in tw.callbacks[firstAttr]
-      callback val, parent
+    for updater in tw.updaters[firstAttr]
+      updater val, parent
     return
 
   # it.content
   if attr.indexOf('.') > -1
     attrLink = attr.split '.'
     firstAttr = attrLink.shift()
-    tw.callbacks[firstAttr].push (val, parent)->
+    tw.updaters[firstAttr].push (val, parent)->
       for atr in attrLink
         val = val[atr]
       updater val, parent
@@ -40,9 +40,7 @@ bind = (tw, attr, updater)->
 
   # content
   else
-    tw.callbacks[firstAttr].push (val, parent)->
-      updater val, parent
-      return
+    tw.updaters[firstAttr].push updater
   return
 
 tinywings = (tpl)->
@@ -51,7 +49,7 @@ tinywings = (tpl)->
   frag = document.createElement 'div'
   frag.innerHTML = tpl
   tw.frag = frag
-  tw.callbacks = {}
+  tw.updaters = {}
   travel frag, (node, done)->
     if node.dataset?.bind
       binder = node.dataset.bind
