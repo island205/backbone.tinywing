@@ -20,7 +20,7 @@ travel = (node, callback)->
     node = next
   return
 
-bind = (tw, attr, updater)->
+bind = (tw, attr, up)->
   firstAttr = attr.split('.')[0]
   tw.updaters[firstAttr] = tw.updaters[firstAttr] or []
   tw[firstAttr] = tw[firstAttr] or (val, parent)->
@@ -35,12 +35,12 @@ bind = (tw, attr, updater)->
     tw.updaters[firstAttr].push (val, parent)->
       for atr in attrLink
         val = val[atr]
-      updater val, parent
+      up val, parent
       return
 
   # content
   else
-    tw.updaters[firstAttr].push updater
+    tw.updaters[firstAttr].push up
   return
 
 tinywings = (tpl)->
@@ -61,11 +61,33 @@ tinywings = (tpl)->
             node.innerHTML = val
             log "text-refrash to #{node} with #{val}"
 
+        when 'with'
+          done()
+          innerTpl = node.innerHTML
+          log "with-bind to #{node} with #{attr}"
+          bind tw, attr, (val)->
+            node.innerHTML = ''
+            log "foreach-refrash to #{node} with #{val}"
+            innerDomTpl = tinywings innerTpl
+
+            # copy children elements
+            child = innerDomTpl.frag.firstChild
+            while child
+              next = child.nextSibling
+              node.appendChild child
+              child = next
+
+            for own key, value of innerDomTpl
+              if key isnt 'frag'
+                if val[key]
+                  innerDomTpl[key] val[key], node
+            return
+
         when 'foreach'
           done()
           innerTpl = node.innerHTML
           log "foreach-bind to #{node} with #{attr}"
-          tw[attr] = (val)->
+          bind tw, attr, (val)->
             node.innerHTML = ''
             log "foreach-refrash to #{node} with #{val}"
             for item in val
@@ -156,6 +178,7 @@ window.onload = ->
     document.body.appendChild domTpl.frag.firstChild.nextSibling
     document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling
     document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling
+    document.body.appendChild domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling
     domTpl.text 'something like this'
     domTpl.content 'more'
     domTpl.it
@@ -182,6 +205,6 @@ window.onload = ->
     domTpl.that
       content:'that.xxxx'
 
-  #test1()
-  test2()
+  test1()
+  #test2()
   #test3()

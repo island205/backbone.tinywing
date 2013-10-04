@@ -29,12 +29,12 @@
     }
   };
 
-  bind = function(tw, attr, updater) {
+  bind = function(tw, attr, up) {
     var attrLink, firstAttr;
     firstAttr = attr.split('.')[0];
     tw.updaters[firstAttr] = tw.updaters[firstAttr] || [];
     tw[firstAttr] = tw[firstAttr] || function(val, parent) {
-      var _i, _len, _ref;
+      var updater, _i, _len, _ref;
       _ref = tw.updaters[firstAttr];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         updater = _ref[_i];
@@ -50,10 +50,10 @@
           atr = attrLink[_i];
           val = val[atr];
         }
-        updater(val, parent);
+        up(val, parent);
       });
     } else {
-      tw.updaters[firstAttr].push(updater);
+      tw.updaters[firstAttr].push(up);
     }
   };
 
@@ -78,11 +78,37 @@
               return log("text-refrash to " + node + " with " + val);
             });
             break;
+          case 'with':
+            done();
+            innerTpl = node.innerHTML;
+            log("with-bind to " + node + " with " + attr);
+            bind(tw, attr, function(val) {
+              var child, innerDomTpl, key, next, value;
+              node.innerHTML = '';
+              log("foreach-refrash to " + node + " with " + val);
+              innerDomTpl = tinywings(innerTpl);
+              child = innerDomTpl.frag.firstChild;
+              while (child) {
+                next = child.nextSibling;
+                node.appendChild(child);
+                child = next;
+              }
+              for (key in innerDomTpl) {
+                if (!__hasProp.call(innerDomTpl, key)) continue;
+                value = innerDomTpl[key];
+                if (key !== 'frag') {
+                  if (val[key]) {
+                    innerDomTpl[key](val[key], node);
+                  }
+                }
+              }
+            });
+            break;
           case 'foreach':
             done();
             innerTpl = node.innerHTML;
             log("foreach-bind to " + node + " with " + attr);
-            tw[attr] = function(val) {
+            bind(tw, attr, function(val) {
               var child, innerDomTpl, item, key, next, value, _i, _len;
               node.innerHTML = '';
               log("foreach-refrash to " + node + " with " + val);
@@ -105,7 +131,7 @@
                   }
                 }
               }
-            };
+            });
         }
       } else if (node.nodeType === 3 && /{{[^}]*}}/.test(node.data)) {
         log("text-bind to " + node);
@@ -176,6 +202,7 @@
       document.body.appendChild(domTpl.frag.firstChild.nextSibling);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling);
       document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling);
+      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling);
       domTpl.text('something like this');
       domTpl.content('more');
       return domTpl.it({
@@ -213,7 +240,7 @@
         content: 'that.xxxx'
       });
     };
-    return test2();
+    return test1();
   };
 
 }).call(this);
