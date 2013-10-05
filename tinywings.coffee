@@ -20,6 +20,9 @@ travel = (node, callback)->
     node = next
   return
 
+# Preprocess node bind-data
+preprocess = (node)->
+
 bind = (tw, attr, up)->
   firstAttr = attr.split('.')[0]
   tw.updaters[firstAttr] = tw.updaters[firstAttr] or []
@@ -43,6 +46,8 @@ bind = (tw, attr, up)->
     tw.updaters[firstAttr].push up
   return
 
+BOOLEAN_ATTRIBUTES = ['disabled', 'readonly']
+
 tinywings = (tpl)->
   log 'START BIND'
   tw = {}
@@ -53,13 +58,34 @@ tinywings = (tpl)->
   travel frag, (node, done)->
     if node.dataset?.bind
       binder = node.dataset.bind
-      [type, attr]= binder.split ':'
+      binder = binder.split ':'
+      type = binder.shift()
+      attr = binder.join ':'
       switch type
         when 'text'
           log "text-bind to #{node} with #{attr}"
           bind tw, attr, (val)->
             node.innerHTML = val + ''
             log "text-refrash to #{node} with #{val}"
+
+        when 'attr'
+          log "attr-bind to #{node} with #{attr}"
+          attr = JSON.parse attr
+          for key, value of attr
+            if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
+              do (key, value)->
+                bind tw, value, (val)->
+                  if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
+                    node[key] = not not val
+                  else
+                    node[key] = val
+                  log "attr-refrash to #{node} with #{val}"
+
+        when 'value'
+          log "value-bind to #{node} with #{attr}"
+          bind tw, attr, (val)->
+            node.value = val
+            log "value-refrash to #{node} with #{val}"
 
         when 'if'
           done()
@@ -203,7 +229,7 @@ tpl = '''
   <div data-bind="text:text">
   </div>
   <p data-bind="text:content"></p>
-  <p>this is inline {{content}} bind.</p>
+  <p>this is inline {{content}} bind.<input data-bind="value:content"/><input value="disabled" data-bind='attr:{"disabled": "content"}' /></p>
   <p>this is inline {{it.content}} bind and {{content}} bind.</p>
   <p data-bind="with:it"><span data-bind="text:content"></span></p>
   <p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>
