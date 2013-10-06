@@ -1,4 +1,4 @@
-Backbone.TinyWings = do (Backbone, _)->
+Backbone.tinywings = do (Backbone, _)->
 
   debug = true
   log = ->
@@ -45,7 +45,7 @@ Backbone.TinyWings = do (Backbone, _)->
       attr = JSON.parse attr
       for key, value of attr
         if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
-          do (key, value)->
+          do (key, value)=>
             @_bind value, (val)->
               if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
                 node[key] = not not val
@@ -167,11 +167,11 @@ Backbone.TinyWings = do (Backbone, _)->
 
   _.extend Tinywings::,
     preprocess: ->
-      traversal @frag, (node, done)->
-        if node.nodeType is 3 and /{{[^}]*}}/.test node.data
+      traversal @frag, (node, done)=>
+        if node.nodeType is 3
           return @bindTextNode node
         [type, attr] = preprocessBind node
-        @bind node, type, attr, done
+        @bind node, type, attr, done if type? and attr?
         return
       return
     bind: (node, type, attr, done)->
@@ -181,7 +181,7 @@ Backbone.TinyWings = do (Backbone, _)->
       first = attr.split('.')[0]
       @updaters[first] or= []
       @[first] or= (val, valObj, parent)->
-        for up in tw.updaters[first]
+        for up in @updaters[first]
           up val, valObj, parent
         return
 
@@ -200,6 +200,8 @@ Backbone.TinyWings = do (Backbone, _)->
         @updaters[first].push updater
       return
     bindTextNode: (node)->
+      if not /{{[^}]*}}/.test node.data
+        return
       log "text-bind to #{node}"
       matches = node.data.match /{{[^}]*}}/g
 
@@ -214,7 +216,7 @@ Backbone.TinyWings = do (Backbone, _)->
         [bind, attr] = /{{([^}]*)}}/.exec match
         newData = newData.replace new RegExp(bind, 'g'), "<!-- data-bind='_text:#{attr}' -->#{bind}<!-- -->"
 
-        do (attr, parent)->
+        do (attr, parent)=>
           @_bind attr, (val, valObj, p)->
             p or= parent
             nodes = p.childNodes
@@ -245,7 +247,7 @@ Backbone.TinyWings = do (Backbone, _)->
 
       return
 
-    appendTo: ->
+    appendTo: (el)->
       child = @frag.firstChild
       while child
         next = child.nextSibling
@@ -253,12 +255,14 @@ Backbone.TinyWings = do (Backbone, _)->
         child = next
       @
 
-    bindModel: (model, attrs)->
-      @render model.toJSON()
-      for attr  in attrs
-        model.on "change:#{attr}", =>
-          data = model.toJSON()
-          @[attr] data[attr], data
+    bindModel: (model)->
+      data = model.toJSON()
+      @render data
+      for attr  in data
+        if attr in @
+          model.on "change:#{attr}", =>
+            data = model.toJSON()
+            @[attr] data[attr], data
       @
 
     render: (model)->
@@ -267,4 +271,5 @@ Backbone.TinyWings = do (Backbone, _)->
           @[key] model[key], model
       @
 
-  Tinywings
+  (tpl)->
+    new Tinywings(tpl)

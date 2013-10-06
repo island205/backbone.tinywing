@@ -27,7 +27,7 @@ tpl2 = '''
 
 window.onload = ->
   test1 = ->
-    domTpl = tinywings tpl
+    domTpl = Backbone.tinywings tpl
     domTpl.appendTo document.body
     o =
       text: 'something like this'
@@ -35,24 +35,21 @@ window.onload = ->
       showIt: false
       it:
         content: 'it.content'
-    domTpl.text o.text, o
-    domTpl.content o.content, o
-    domTpl.it o.it, o
-    domTpl.showIt o.showIt, o
+    domTpl.render o
 
   test2 = ->
-    domTpl1 = tinywings tpl1
+    domTpl1 = Backbone.tinywings tpl1
     domTpl1.appendTo document.body
     o =
       people:[
         {content:'xxx', name: 'yyyy', pens: []},
         {content:'xxx', name: 'yyy' , pens: []}
       ]
-    domTpl1.people o.people, o
+    domTpl1.render o
 
 
   test3 = ->
-    domTpl = tinywings tpl2
+    domTpl = Backbone.tinywings tpl2
     domTpl.appendTo document.body
     o =
       it:
@@ -60,8 +57,7 @@ window.onload = ->
         content: 'it.xxxxxx'
       that:
         content: 'that.xxxxx'
-    domTpl.it o.it, o
-    domTpl.that o.that, o
+    domTpl.render o
 
   test1()
   test2()

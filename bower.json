@@ -1,0 +1,21 @@
+{
+  "name": "tinywings.js",
+  "main": "tinywings.js",
+  "version": "0.0.0",
+  "homepage": "https://github.com/island205/tinywings",
+  "authors": [
+    "island205 <island205@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "backbone": "~1.0.0",
+    "underscore": "~1.5.2"
+  }
+}

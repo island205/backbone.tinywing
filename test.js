@@ -12,7 +12,7 @@
     var test1, test2, test3;
     test1 = function() {
       var domTpl, o;
-      domTpl = tinywings(tpl);
+      domTpl = Backbone.tinywings(tpl);
       domTpl.appendTo(document.body);
       o = {
         text: 'something like this',
@@ -22,14 +22,11 @@
           content: 'it.content'
         }
       };
-      domTpl.text(o.text, o);
-      domTpl.content(o.content, o);
-      domTpl.it(o.it, o);
-      return domTpl.showIt(o.showIt, o);
+      return domTpl.render(o);
     };
     test2 = function() {
       var domTpl1, o;
-      domTpl1 = tinywings(tpl1);
+      domTpl1 = Backbone.tinywings(tpl1);
       domTpl1.appendTo(document.body);
       o = {
         people: [
@@ -44,11 +41,11 @@
           }
         ]
       };
-      return domTpl1.people(o.people, o);
+      return domTpl1.render(o);
     };
     test3 = function() {
       var domTpl, o;
-      domTpl = tinywings(tpl2);
+      domTpl = Backbone.tinywings(tpl2);
       domTpl.appendTo(document.body);
       o = {
         it: {
@@ -59,8 +56,7 @@
           content: 'that.xxxxx'
         }
       };
-      domTpl.it(o.it, o);
-      return domTpl.that(o.that, o);
+      return domTpl.render(o);
     };
     test1();
     test2();
