@@ -46,6 +46,29 @@ bind = (tw, attr, up)->
     tw.updaters[firstAttr].push up
   return
 
+
+appendTo = (el)->
+  child = @frag.firstChild
+  while child
+    next = child.nextSibling
+    el.appendChild child
+    child = next
+  @
+
+bindModel = (model, attrs)->
+  @render model.toJSON()
+  for attr  in attrs
+    model.on "change:#{attr}", =>
+      m = model.toJSON()
+      @[attr] m[attr], m
+  @
+
+render = (model)->
+  for own key, value of @
+    if ['render', 'frag', 'appendTo', 'bindModel', 'updaters'].indexOf(key) is -1
+      @[key] model[key], model
+  @
+
 BOOLEAN_ATTRIBUTES = ['disabled', 'readonly']
 
 tinywings = (tpl)->
@@ -54,6 +77,9 @@ tinywings = (tpl)->
   frag = document.createElement 'div'
   frag.innerHTML = tpl
   tw.frag = frag
+  tw.appendTo = appendTo
+  tw.bindModel = bindModel
+  tw.render = render
   tw.updaters = {}
   travel frag, (node, done)->
     if node.dataset?.bind
@@ -154,7 +180,7 @@ tinywings = (tpl)->
               child = next
 
             for own key, value of innerDomTpl
-              if key isnt 'frag'
+              if ['render', 'frag', 'appendTo', 'bindModel', 'updaters'].indexOf(key) is -1
                 if val[key]?
                   innerDomTpl[key] val[key], val, node
             return
@@ -177,7 +203,7 @@ tinywings = (tpl)->
                 child = next
 
               for own key, value of innerDomTpl
-                if key isnt 'frag'
+                if ['render', 'frag', 'appendTo', 'bindModel', 'updaters'].indexOf(key) is -1
                   if item[key]
                     innerDomTpl[key] item[key], item, node
             return

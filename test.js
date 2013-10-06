@@ -13,13 +13,7 @@
     test1 = function() {
       var domTpl, o;
       domTpl = tinywings(tpl);
-      document.body.appendChild(domTpl.frag.firstChild);
-      document.body.appendChild(domTpl.frag.firstChild.nextSibling);
-      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling);
-      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling);
-      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling);
-      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling.nextSibling);
-      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling.nextSibling.nextSibling.nextSibling);
+      domTpl.appendTo(document.body);
       o = {
         text: 'something like this',
         content: 'more',
@@ -36,7 +30,7 @@
     test2 = function() {
       var domTpl1, o;
       domTpl1 = tinywings(tpl1);
-      document.body.appendChild(domTpl1.frag.firstChild);
+      domTpl1.appendTo(document.body);
       o = {
         people: [
           {
@@ -55,10 +49,7 @@
     test3 = function() {
       var domTpl, o;
       domTpl = tinywings(tpl2);
-      document.body.appendChild(domTpl.frag.firstChild);
-      document.body.appendChild(domTpl.frag.firstChild.nextSibling);
-      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling);
-      document.body.appendChild(domTpl.frag.firstChild.nextSibling.nextSibling.nextSibling);
+      domTpl.appendTo(document.body);
       o = {
         it: {
           text: 'it.xxxx',
