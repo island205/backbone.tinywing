@@ -165,7 +165,7 @@ Backbone.tinywings = do (Backbone, _)->
     @frag.innerHTML = tpl
     @preprocess()
 
-  _.extend Tinywings::,
+  _.extend Tinywings::, Backbone.Events,
     preprocess: ->
       traversal @frag, (node, done)=>
         if node.nodeType is 3
@@ -258,12 +258,16 @@ Backbone.tinywings = do (Backbone, _)->
     bindModel: (model)->
       data = model.toJSON()
       @render data
-      for attr  in data
-        if attr in @
-          model.on "change:#{attr}", =>
-            data = model.toJSON()
-            @[attr] data[attr], data
+      for own attr of data
+        if  attr of @
+          do (attr)=>
+            @listenTo model, "change:#{attr}", =>
+              data = model.toJSON()
+              @[attr] data[attr], data
       @
+
+    unbindModel: (model)->
+      @stopListening model
 
     render: (model)->
       for own key, value of @
