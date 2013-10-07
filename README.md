@@ -62,6 +62,18 @@ tw.render({
 
 将view绑定到model（Backbone的`Model`实例），当`model`有变化时，自动更新view。
 
+```javascript
+tw.bindModel(model)
+```
+
+**tw.unbindModel(model)**
+
+view与model解绑定。
+
+```javascript
+tw.unbindModel(model)
+```
+
 **tw.appendTo(node)**
 
 将view添加到DOM树中。
@@ -69,6 +81,7 @@ tw.render({
 ```javascript
 tw.appendTo($('#todos'))
 ```
+
 
 ## 模板语法
 
@@ -151,6 +164,10 @@ tw.appendTo($('#todos'))
 ## 示例
 
 [backbone-todomvc-with-tinywings](https://github.com/island205/todomvc/tree/gh-pages/architecture-examples/backbone-with-tinywings)
+
+## 性能测试
+
+[http://jsperf.com/tinywings-vs-template](http://jsperf.com/tinywings-vs-template) （目前很渣）
 
 
 ## 更新
