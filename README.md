@@ -16,7 +16,7 @@ Backbone.tinywings将模板转换成DOM，通过DOM方法来修改DOM，在Model
 
 1. 只有一次DOM创建；
 2. 只调一次`render`方法；
-3. Model变化时，自动绑定在View的数据。
+3. Model变化时，自动更新与View的数据。
 
 Backbone.tinywings采用了与knockout类似的模板语法。
 
@@ -74,7 +74,7 @@ tw.appendTo($('#todos'))
 
 ### 值绑定
 
-**text:varibale**
+**text**
 
 ```html
 <label data-bind="text:title"></label>
@@ -82,14 +82,14 @@ tw.appendTo($('#todos'))
 
 在`label`中显示`title`的值。
 
-**attr:{"readonly": "disable"}**
+**attr**
 
 ```html
 <input class="toggle" type="checkbox" data-bind='attr:{"checked": "completed"}'>
 ```
 绑定节点的属性。
 
-**value:title**
+**value**
 
 ```html
 <input class="edit" data-bind="value:title">
@@ -97,7 +97,7 @@ tw.appendTo($('#todos'))
 
 绑定到表单元素的`value`。
 
-**{{title}}**
+**{{}}**
 
 ```html
 <span> {{title}} This is a inline bind.</span>
@@ -107,7 +107,7 @@ tw.appendTo($('#todos'))
 
 ### 流控制
 
-**if:title**
+**if**
 
 ```html
 <div data-bind="if:title">
@@ -115,11 +115,11 @@ tw.appendTo($('#todos'))
 </div>
 ```
 
-**ifnot:title**
+**ifnot**
 
 与`if`绑定相似。
 
-**with:todo**
+**with**
 
 与JavaScript的`with`类似：
 
@@ -139,7 +139,7 @@ tw.appendTo($('#todos'))
 </div>
 ```
 
-**foreach:todos**
+**foreach**
 
 ```html
 <ul data-bind="foreach:todos">
