@@ -17,7 +17,6 @@ Backbone.tinywings = do (Backbone, _)->
     
     node = node.firstChild
     while node
-      log "travel #{node}"
       next = node.nextSibling
       process node, done
       if not stop

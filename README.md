@@ -18,7 +18,7 @@ Backbone.tinywings将模板转换成DOM，通过DOM方法来修改DOM，在Model
 2. 只调一次`render`方法；
 3. Model变化时，自动更新与View的数据。
 
-Backbone.tinywings采用了与knockout类似的模板语法。
+Backbone.tinywings采用了与AngularJS类似的模板语法。
 
 最后，非常傲娇地使用了[CoffeeScript](http://coffeescript.org/)。
 
@@ -87,25 +87,18 @@ tw.appendTo($('#todos'))
 
 ### 值绑定
 
-**text**
+**tw-text**
 
 ```html
-<label data-bind="text:title"></label>
+<label tw-text="title"></label>
 ```
 
 在`label`中显示`title`的值。
 
-**attr**
+**tw-value**
 
 ```html
-<input class="toggle" type="checkbox" data-bind='attr:{"checked": "completed"}'>
-```
-绑定节点的属性。
-
-**value**
-
-```html
-<input class="edit" data-bind="value:title">
+<input class="edit" tw-value="title">
 ```
 
 绑定到表单元素的`value`。
@@ -118,48 +111,63 @@ tw.appendTo($('#todos'))
 
 文本节点中的值绑定。
 
-### 流控制
+### 流控制命令
 
-**if**
+**tw-if**
 
 ```html
-<div data-bind="if:title">
-	<label data-bind="text:title"></label>
+<div tw-if="title">
+	{{title}}
 </div>
 ```
 
-**ifnot**
-
-与`if`绑定相似。
-
-**with**
-
-与JavaScript的`with`类似：
+**tw-repeat**
 
 ```html
-<div data-bind="with:todo">
-	<label data-bind="text:title"></label>
-	<label data-bind="text:date"></label>
-</div>
-```
-
-等价于：
-
-```html
-<div>
-	<label data-bind="text:todo.title"></label>
-	<label data-bind="text:todo.date"></label>
-</div>
-```
-
-**foreach**
-
-```html
-<ul data-bind="foreach:todos">
-	<li data-bind="text:title"></li>
+<ul tw-repeat="todo in todos">
+	<li>{{todo.title}}</li>
 </ul>
 ```
 
+### 样式指令
+
+**tw-class**
+
+还包括：`tw-class-odd` 和 `tw-class-even`
+
+```html
+<div tw-class="modal"></div>
+
+<div tw-class="{modal: isModal}"></div>
+
+<tr tw-class-odd="red-line"></tr>
+```
+
+**tw-style**
+
+```html
+<div tw-style="styleInModel"></div>
+```
+
+**tw-hide tw-show**
+
+通过这两个命令，来控制元素的显示和影藏
+
+```html
+<div tw-show="isNeedShow"></div>
+```
+
+### 表单控件相关的指令
+
+- tw-checked
+- tw-selected
+- tw-disabled
+- tw-readonly
+
+### 其他指令
+
+- tw-href
+- tw-src
 
 ## 示例
 
