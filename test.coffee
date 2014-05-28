@@ -5,7 +5,7 @@ tpl = '''
   <div data-bind="text:text">
   </div>
   <p data-bind="text:content"></p>
-  <p>this is inline {{content}} bind.<input data-bind="value:content"/><input value="disabled" data-bind='attr:{"disabled": "content"}' /></p>
+  <p>this is inline {{content}} bind.<input data-bind="value:content"/></p>
   <p>this is inline {{it.content}} bind and {{content}} bind.</p>
   <p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>
 '''
@@ -25,7 +25,7 @@ tpl2 = '''
 
 window.onload = ->
   test1 = ->
-    domTpl = Backbone.tinywings tpl
+    domTpl = Backbone.tinywing tpl
     domTpl.appendTo document.body
     o =
       text: 'something like this'
@@ -36,7 +36,7 @@ window.onload = ->
     domTpl.render o
 
   test2 = ->
-    domTpl1 = Backbone.tinywings tpl1
+    domTpl1 = Backbone.tinywing tpl1
     domTpl1.appendTo document.body
     o =
       people:[
@@ -47,7 +47,7 @@ window.onload = ->
 
 
   test3 = ->
-    domTpl = Backbone.tinywings tpl2
+    domTpl = Backbone.tinywing tpl2
     domTpl.appendTo document.body
     o =
       it:

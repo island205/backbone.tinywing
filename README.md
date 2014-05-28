@@ -1,4 +1,4 @@
-# Backbone.tinywings
+# Backbone.tinywing
 
 为Backbone添加一个小翅膀，将Model单项绑定到View。
 
@@ -12,19 +12,19 @@ Backbone本身并没有自己的模板引擎，借助`_.template`等其他一些
 
 > 3. 代码改怎么写，频繁调用`render`函数，很不**make sence**。
 
-Backbone.tinywings将模板转换成DOM，通过DOM方法来修改DOM，在Model变化时，对View的更新非常轻量；关键的是：
+Backbone.tinywing将模板转换成DOM，通过DOM方法来修改DOM，在Model变化时，对View的更新非常轻量；关键的是：
 
 1. 只有一次DOM创建；
 2. 只调一次`render`方法；
 3. Model变化时，自动更新与View的数据。
 
-Backbone.tinywings采用了与AngularJS类似的模板语法。
+Backbone.tinywing采用了与AngularJS类似的模板语法。
 
 最后，非常傲娇地使用了[CoffeeScript](http://coffeescript.org/)。
 
 ## 如何使用
 
-Backbone.**tinywings(tpl)**
+Backbone.**tinywing(tpl)**
 
 编译模板，将模板转化为可根据属性值更新的DOM。
 
@@ -41,7 +41,7 @@ Backbone.**tinywings(tpl)**
 
 ```javascript
 // 构建模板
-var tw = Backbone.tinywings($('#item-template').html())
+var tw = Backbone.tinywing($('#item-template').html())
 
 // 数据更新
 tw.title('别忘了买盐')
@@ -171,11 +171,11 @@ tw.appendTo($('#todos'))
 
 ## 示例
 
-[backbone-todomvc-with-tinywings](https://github.com/island205/todomvc/tree/gh-pages/architecture-examples/backbone-with-tinywings)
+[backbone-todomvc-with-tinywing](https://github.com/island205/todomvc/tree/gh-pages/architecture-examples/backbone-with-tinywing)
 
 ## 性能测试
 
-[http://jsperf.com/tinywings-vs-template](http://jsperf.com/tinywings-vs-template) （目前很渣）
+[http://jsperf.com/tinywing-vs-template](http://jsperf.com/tinywing-vs-template) （目前很渣）
 
 
 ## 更新

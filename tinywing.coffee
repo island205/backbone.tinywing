@@ -1,4 +1,4 @@
-Backbone.tinywings = do (Backbone, _)->
+Backbone.tinywing = do (Backbone, _)->
 
   debug = true
   log = ->
@@ -32,7 +32,7 @@ Backbone.tinywings = do (Backbone, _)->
       attr = bind.join ':'
     [type, attr]
 
-  class Tinywings extends Backbone.Events
+  class Tinywing extends Backbone.Events
 
     @directive: (name, directive)->
       @__directives or= {}
@@ -54,24 +54,31 @@ Backbone.tinywings = do (Backbone, _)->
       return
 
     bind: (node, type, attr, done)->
-      Tinywings.__directives[type].apply @, [node, attr, done]
+      log "#{type}-bind to #{node} with #{attr}"
+      directive = Tinywing.__directives[type]
+      if _.isFunction directive
+        @_bind node, attr, directive
+      else if _.isObject directive
+        if directive.terminal
+          done()
+        @_bind node, attr, directive.compile
 
-    _bind: (attr, updater)->
+    _bind: (node, attr, updater)->
       first = attr.split('.')[0]
       @updaters[first] or= []
       @[first] or= (val, valObj, parent)->
         for up in @updaters[first]
-          up val, valObj, parent
+          up node, val, valObj, parent
         return
 
       # it.content
       if attr.indexOf('.') > -1
         attrLink = attr.split '.'
         first = attrLink.shift()
-        @updaters[first].push (val, valObj, parent)->
+        @updaters[first].push (node, val, valObj, parent)->
           for atr in attrLink
             val = val[atr]
-          updater val, valObj, parent
+          updater node, val, valObj, parent
           return
 
       # content
@@ -97,7 +104,7 @@ Backbone.tinywings = do (Backbone, _)->
         newData = newData.replace new RegExp(bind, 'g'), "<!-- data-bind='_text:#{attr}' -->#{bind}<!-- -->"
 
         do (attr, parent)=>
-          @_bind attr, (val, valObj, p)->
+          @_bind node, attr, (node, val, valObj, p)->
             p or= parent
             nodes = p.childNodes
             for node in nodes
@@ -155,42 +162,24 @@ Backbone.tinywings = do (Backbone, _)->
           @[key] model[key], model
       @
 
-  Tinywings.directive 'text', (node, attr)->
-    log "text-bind to #{node} with #{attr}"
-    @_bind attr, (val)->
-      node.innerHTML = val + ''
-      log "text-refrash to #{node} with #{val}"
+  Tinywing.directive 'text', (node, val)->
+    node.innerHTML = val + ''
+    log "text-refrash to #{node} with #{val}"
 
-  Tinywings.directive 'attr', (node, attr)->
-    log "attr-bind to #{node} with #{attr}"
-    attr = JSON.parse attr
-    for key, value of attr
-      if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
-        do (key, value)=>
-          @_bind value, (val)->
-            if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
-              node[key] = not not val
-            else
-              node[key] = val
-            log "attr-refrash to #{node} with #{val}"
+  Tinywing.directive 'value', (node, val)->
+    node.value = val
+    log "value-refrash to #{node} with #{val}"
 
-  Tinywings.directive 'value', (node, attr)->
-    log "value-bind to #{node} with #{attr}"
-    @_bind attr, (val)->
-      node.value = val
-      log "value-refrash to #{node} with #{val}"
-
-  Tinywings.directive 'if', (node, attr, done)->
-    done()
-    innerTpl = node.innerHTML
-    log "ifnot-bind to #{node} with #{attr}"
-    @_bind attr, (val, valObj)->
+  Tinywing.directive 'if', {
+    terminal: true
+    compile: (node, val, valObj)->
+      innerHTML = node.innerHTML
       node.innerHTML = ''
-      log "ifnot-refrash to #{node} with #{val}"
+      log "if-refrash to #{node} with #{val}"
       if not val
         return
 
-      innerDomTpl = new Tinywings(innerTpl)
+      innerDomTpl = new Tinywing(innerHTML)
 
       ###
       Copy children elements
@@ -206,16 +195,16 @@ Backbone.tinywings = do (Backbone, _)->
           if valObj[key]?
             innerDomTpl[key] valObj[key], valObj, node
       return
+  }
 
-  Tinywings.directive 'foreach', (node, attr, done)->
-    done()
-    innerTpl = node.innerHTML
-    log "foreach-bind to #{node} with #{attr}"
-    @_bind attr, (val)->
+  Tinywing.directive 'foreach', {
+    terminal: true
+    compile: (node, val)->
+      innerHTML = node.innerHTML
       node.innerHTML = ''
       log "foreach-refrash to #{node} with #{val}"
       for item in val
-        innerDomTpl = new Tinywings(innerTpl)
+        innerDomTpl = new Tinywing(innerHTML)
         ###
         Copy children elements
         ###
@@ -230,6 +219,7 @@ Backbone.tinywings = do (Backbone, _)->
             if item[key]
               innerDomTpl[key] item[key], item, node
       return
+  }
 
   (tpl)->
-    new Tinywings(tpl)
+    new Tinywing(tpl)

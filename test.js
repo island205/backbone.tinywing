@@ -2,7 +2,7 @@
 (function() {
   var tpl, tpl1, tpl2;
 
-  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{content}} bind.<input data-bind="value:content"/><input value="disabled" data-bind=\'attr:{"disabled": "content"}\' /></p>\n<p>this is inline {{it.content}} bind and {{content}} bind.</p>\n<p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>';
+  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{content}} bind.<input data-bind="value:content"/></p>\n<p>this is inline {{it.content}} bind and {{content}} bind.</p>\n<p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>';
 
   tpl1 = '<div data-bind="foreach:people">this is {{content}}  and {{name}}.<p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>';
 
@@ -12,7 +12,7 @@
     var test1, test2, test3;
     test1 = function() {
       var domTpl, o;
-      domTpl = Backbone.tinywings(tpl);
+      domTpl = Backbone.tinywing(tpl);
       domTpl.appendTo(document.body);
       o = {
         text: 'something like this',
@@ -26,7 +26,7 @@
     };
     test2 = function() {
       var domTpl1, o;
-      domTpl1 = Backbone.tinywings(tpl1);
+      domTpl1 = Backbone.tinywing(tpl1);
       domTpl1.appendTo(document.body);
       o = {
         people: [
@@ -45,7 +45,7 @@
     };
     test3 = function() {
       var domTpl, o;
-      domTpl = Backbone.tinywings(tpl2);
+      domTpl = Backbone.tinywing(tpl2);
       domTpl.appendTo(document.body);
       o = {
         it: {

@@ -3,8 +3,8 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  Backbone.tinywings = (function(Backbone, _) {
-    var BOOLEAN_ATTRIBUTES, Tinywings, debug, log, preprocessBind, traversal;
+  Backbone.tinywing = (function(Backbone, _) {
+    var BOOLEAN_ATTRIBUTES, Tinywing, debug, log, preprocessBind, traversal;
     debug = true;
     log = function() {
       if (debug) {
@@ -42,23 +42,23 @@
       }
       return [type, attr];
     };
-    Tinywings = (function(_super) {
-      __extends(Tinywings, _super);
+    Tinywing = (function(_super) {
+      __extends(Tinywing, _super);
 
-      Tinywings.directive = function(name, directive) {
+      Tinywing.directive = function(name, directive) {
         var _base;
         this.__directives || (this.__directives = {});
         return (_base = this.__directives)[name] || (_base[name] = directive);
       };
 
-      function Tinywings(tpl) {
+      function Tinywing(tpl) {
         this.updaters = {};
         this.frag = document.createElement('div');
         this.frag.innerHTML = tpl;
         this.preprocess();
       }
 
-      Tinywings.prototype.preprocess = function() {
+      Tinywing.prototype.preprocess = function() {
         traversal(this.frag, (function(_this) {
           return function(node, done) {
             var attr, type, _ref;
@@ -73,11 +73,21 @@
         })(this));
       };
 
-      Tinywings.prototype.bind = function(node, type, attr, done) {
-        return Tinywings.__directives[type].apply(this, [node, attr, done]);
+      Tinywing.prototype.bind = function(node, type, attr, done) {
+        var directive;
+        log("" + type + "-bind to " + node + " with " + attr);
+        directive = Tinywing.__directives[type];
+        if (_.isFunction(directive)) {
+          return this._bind(node, attr, directive);
+        } else if (_.isObject(directive)) {
+          if (directive.terminal) {
+            done();
+          }
+          return this._bind(node, attr, directive.compile);
+        }
       };
 
-      Tinywings.prototype._bind = function(attr, updater) {
+      Tinywing.prototype._bind = function(node, attr, updater) {
         var attrLink, first, _base;
         first = attr.split('.')[0];
         (_base = this.updaters)[first] || (_base[first] = []);
@@ -86,26 +96,26 @@
           _ref = this.updaters[first];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             up = _ref[_i];
-            up(val, valObj, parent);
+            up(node, val, valObj, parent);
           }
         });
         if (attr.indexOf('.') > -1) {
           attrLink = attr.split('.');
           first = attrLink.shift();
-          this.updaters[first].push(function(val, valObj, parent) {
+          this.updaters[first].push(function(node, val, valObj, parent) {
             var atr, _i, _len;
             for (_i = 0, _len = attrLink.length; _i < _len; _i++) {
               atr = attrLink[_i];
               val = val[atr];
             }
-            updater(val, valObj, parent);
+            updater(node, val, valObj, parent);
           });
         } else {
           this.updaters[first].push(updater);
         }
       };
 
-      Tinywings.prototype.bindTextNode = function(node) {
+      Tinywing.prototype.bindTextNode = function(node) {
         var attr, bind, child, first, last, match, matches, newData, newNode, next, parent, tempObj, _fn, _i, _j, _len, _len1, _ref;
         if (!/{{[^}]*}}/.test(node.data)) {
           return;
@@ -122,7 +132,7 @@
         parent = node.parentNode;
         _fn = (function(_this) {
           return function(attr, parent) {
-            return _this._bind(attr, function(val, valObj, p) {
+            return _this._bind(node, attr, function(node, val, valObj, p) {
               var nodes, _k, _len2;
               p || (p = parent);
               nodes = p.childNodes;
@@ -165,7 +175,7 @@
         }
       };
 
-      Tinywings.prototype.appendTo = function(el) {
+      Tinywing.prototype.appendTo = function(el) {
         var child, next;
         child = this.frag.firstChild;
         while (child) {
@@ -176,7 +186,7 @@
         return this;
       };
 
-      Tinywings.prototype.bindModel = function(model) {
+      Tinywing.prototype.bindModel = function(model) {
         var attr, data;
         data = model.toJSON();
         this.render(data);
@@ -196,11 +206,11 @@
         return this;
       };
 
-      Tinywings.prototype.unbindModel = function(model) {
+      Tinywing.prototype.unbindModel = function(model) {
         return this.stopListening(model);
       };
 
-      Tinywings.prototype.render = function(model) {
+      Tinywing.prototype.render = function(model) {
         var key, value;
         for (key in this) {
           if (!__hasProp.call(this, key)) continue;
@@ -212,62 +222,28 @@
         return this;
       };
 
-      return Tinywings;
+      return Tinywing;
 
     })(Backbone.Events);
-    Tinywings.directive('text', function(node, attr) {
-      log("text-bind to " + node + " with " + attr);
-      return this._bind(attr, function(val) {
-        node.innerHTML = val + '';
-        return log("text-refrash to " + node + " with " + val);
-      });
+    Tinywing.directive('text', function(node, val) {
+      node.innerHTML = val + '';
+      return log("text-refrash to " + node + " with " + val);
     });
-    Tinywings.directive('attr', function(node, attr) {
-      var key, value, _results;
-      log("attr-bind to " + node + " with " + attr);
-      attr = JSON.parse(attr);
-      _results = [];
-      for (key in attr) {
-        value = attr[key];
-        if (BOOLEAN_ATTRIBUTES.indexOf(key) > -1) {
-          _results.push((function(_this) {
-            return function(key, value) {
-              return _this._bind(value, function(val) {
-                if (BOOLEAN_ATTRIBUTES.indexOf(key) > -1) {
-                  node[key] = !!val;
-                } else {
-                  node[key] = val;
-                }
-                return log("attr-refrash to " + node + " with " + val);
-              });
-            };
-          })(this)(key, value));
-        } else {
-          _results.push(void 0);
-        }
-      }
-      return _results;
+    Tinywing.directive('value', function(node, val) {
+      node.value = val;
+      return log("value-refrash to " + node + " with " + val);
     });
-    Tinywings.directive('value', function(node, attr) {
-      log("value-bind to " + node + " with " + attr);
-      return this._bind(attr, function(val) {
-        node.value = val;
-        return log("value-refrash to " + node + " with " + val);
-      });
-    });
-    Tinywings.directive('if', function(node, attr, done) {
-      var innerTpl;
-      done();
-      innerTpl = node.innerHTML;
-      log("ifnot-bind to " + node + " with " + attr);
-      return this._bind(attr, function(val, valObj) {
-        var child, innerDomTpl, key, next, value;
+    Tinywing.directive('if', {
+      terminal: true,
+      compile: function(node, val, valObj) {
+        var child, innerDomTpl, innerHTML, key, next, value;
+        innerHTML = node.innerHTML;
         node.innerHTML = '';
-        log("ifnot-refrash to " + node + " with " + val);
+        log("if-refrash to " + node + " with " + val);
         if (!val) {
           return;
         }
-        innerDomTpl = new Tinywings(innerTpl);
+        innerDomTpl = new Tinywing(innerHTML);
 
         /*
         Copy children elements
@@ -287,20 +263,18 @@
             }
           }
         }
-      });
+      }
     });
-    Tinywings.directive('foreach', function(node, attr, done) {
-      var innerTpl;
-      done();
-      innerTpl = node.innerHTML;
-      log("foreach-bind to " + node + " with " + attr);
-      return this._bind(attr, function(val) {
-        var child, innerDomTpl, item, key, next, value, _i, _len;
+    Tinywing.directive('foreach', {
+      terminal: true,
+      compile: function(node, val) {
+        var child, innerDomTpl, innerHTML, item, key, next, value, _i, _len;
+        innerHTML = node.innerHTML;
         node.innerHTML = '';
         log("foreach-refrash to " + node + " with " + val);
         for (_i = 0, _len = val.length; _i < _len; _i++) {
           item = val[_i];
-          innerDomTpl = new Tinywings(innerTpl);
+          innerDomTpl = new Tinywing(innerHTML);
 
           /*
           Copy children elements
@@ -321,10 +295,10 @@
             }
           }
         }
-      });
+      }
     });
     return function(tpl) {
-      return new Tinywings(tpl);
+      return new Tinywing(tpl);
     };
   })(Backbone, _);
 
