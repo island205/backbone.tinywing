@@ -7,9 +7,7 @@ tpl = '''
   <p data-bind="text:content"></p>
   <p>this is inline {{content}} bind.<input data-bind="value:content"/><input value="disabled" data-bind='attr:{"disabled": "content"}' /></p>
   <p>this is inline {{it.content}} bind and {{content}} bind.</p>
-  <p data-bind="with:it"><span data-bind="text:content"></span></p>
   <p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>
-  <p data-bind="ifnot:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is false</p>
 '''
 
 tpl1 = '''

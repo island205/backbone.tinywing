@@ -2,7 +2,7 @@
 (function() {
   var tpl, tpl1, tpl2;
 
-  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{content}} bind.<input data-bind="value:content"/><input value="disabled" data-bind=\'attr:{"disabled": "content"}\' /></p>\n<p>this is inline {{it.content}} bind and {{content}} bind.</p>\n<p data-bind="with:it"><span data-bind="text:content"></span></p>\n<p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>\n<p data-bind="ifnot:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is false</p>';
+  tpl = '<div data-bind="text:text">\n</div>\n<p data-bind="text:content"></p>\n<p>this is inline {{content}} bind.<input data-bind="value:content"/><input value="disabled" data-bind=\'attr:{"disabled": "content"}\' /></p>\n<p>this is inline {{it.content}} bind and {{content}} bind.</p>\n<p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>';
 
   tpl1 = '<div data-bind="foreach:people">this is {{content}}  and {{name}}.<p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>';
 

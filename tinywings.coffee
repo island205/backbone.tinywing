@@ -32,139 +32,18 @@ Backbone.tinywings = do (Backbone, _)->
       attr = bind.join ':'
     [type, attr]
 
-  buildInBind =
-    text: (node, attr)->
-      log "text-bind to #{node} with #{attr}"
-      @_bind attr, (val)->
-        node.innerHTML = val + ''
-        log "text-refrash to #{node} with #{val}"
+  class Tinywings extends Backbone.Events
 
-    attr: (node, attr)->
-      log "attr-bind to #{node} with #{attr}"
-      attr = JSON.parse attr
-      for key, value of attr
-        if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
-          do (key, value)=>
-            @_bind value, (val)->
-              if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
-                node[key] = not not val
-              else
-                node[key] = val
-              log "attr-refrash to #{node} with #{val}"
+    @directive: (name, directive)->
+      @__directives or= {}
+      @__directives[name] or= directive
 
-    value: (node, attr)->
-      log "value-bind to #{node} with #{attr}"
-      @_bind attr, (val)->
-        node.value = val
-        log "value-refrash to #{node} with #{val}"
+    constructor: (tpl)->
+      @updaters = {}
+      @frag = document.createElement 'div'
+      @frag.innerHTML = tpl
+      @preprocess()
 
-    if: (node, attr, done)->
-      done()
-      innerTpl = node.innerHTML
-      log "ifnot-bind to #{node} with #{attr}"
-      @_bind attr, (val, valObj)->
-        node.innerHTML = ''
-        log "ifnot-refrash to #{node} with #{val}"
-        if not val
-          return
-
-        innerDomTpl = new Tinywings(innerTpl)
-
-        ###
-        Copy children elements
-        ###
-        child = innerDomTpl.frag.firstChild
-        while child
-          next = child.nextSibling
-          node.appendChild child
-          child = next
-
-        for own key, value of innerDomTpl
-          if key isnt 'frag'
-            if valObj[key]?
-              innerDomTpl[key] valObj[key], valObj, node
-        return
-
-    with: (node, attr, done)->
-      done()
-      innerTpl = node.innerHTML
-      log "with-bind to #{node} with #{attr}"
-      @_bind attr, (val)->
-        node.innerHTML = ''
-        log "with-refrash to #{node} with #{val}"
-        innerDomTpl = new Tinywings(innerTpl)
-
-        # copy children elements
-        child = innerDomTpl.frag.firstChild
-        while child
-          next = child.nextSibling
-          node.appendChild child
-          child = next
-
-        for own key, value of innerDomTpl
-          if ['frag', 'updaters'].indexOf(key) is -1
-            if val[key]?
-              innerDomTpl[key] val[key], val, node
-        return
-
-    ifnot: (node, attr, done)->
-      done()
-      innerTpl = node.innerHTML
-      log "if-bind to #{node} with #{attr}"
-      @_bind attr, (val, valObj)->
-        node.innerHTML = ''
-        log "if-refrash to #{node} with #{val}"
-        if not not val
-          return
-
-        innerDomTpl = new Tinywings(innerTpl)
-        
-        ###
-        Copy children elements
-        ###
-        child = innerDomTpl.frag.firstChild
-        while child
-          next = child.nextSibling
-          node.appendChild child
-          child = next
-
-        for own key, value of innerDomTpl
-          if key isnt 'frag'
-            if valObj[key]?
-              innerDomTpl[key] valObj[key], valObj, node
-        return
-
-    foreach: (node, attr, done)->
-      done()
-      innerTpl = node.innerHTML
-      log "foreach-bind to #{node} with #{attr}"
-      @_bind attr, (val)->
-        node.innerHTML = ''
-        log "foreach-refrash to #{node} with #{val}"
-        for item in val
-          innerDomTpl = new Tinywings(innerTpl)
-          ###
-          Copy children elements
-          ###
-          child = innerDomTpl.frag.firstChild
-          while child
-            next = child.nextSibling
-            node.appendChild child
-            child = next
-
-          for own key, value of innerDomTpl
-            if ['frag', 'updaters'].indexOf(key) is -1
-              if item[key]
-                innerDomTpl[key] item[key], item, node
-        return
-
-  Tinywings = (tpl)->
-    @updaters = {}
-    @frag = document.createElement 'div'
-    @frag.innerHTML = tpl
-    @preprocess()
-
-  _.extend Tinywings::, Backbone.Events,
     preprocess: ->
       traversal @frag, (node, done)=>
         if node.nodeType is 3
@@ -173,8 +52,9 @@ Backbone.tinywings = do (Backbone, _)->
         @bind node, type, attr, done if type? and attr?
         return
       return
+
     bind: (node, type, attr, done)->
-      buildInBind[type].apply @, [node, attr, done]
+      Tinywings.__directives[type].apply @, [node, attr, done]
 
     _bind: (attr, updater)->
       first = attr.split('.')[0]
@@ -198,6 +78,7 @@ Backbone.tinywings = do (Backbone, _)->
       else
         @updaters[first].push updater
       return
+
     bindTextNode: (node)->
       if not /{{[^}]*}}/.test node.data
         return
@@ -273,6 +154,82 @@ Backbone.tinywings = do (Backbone, _)->
         if ['frag', 'updaters'].indexOf(key) is -1
           @[key] model[key], model
       @
+
+  Tinywings.directive 'text', (node, attr)->
+    log "text-bind to #{node} with #{attr}"
+    @_bind attr, (val)->
+      node.innerHTML = val + ''
+      log "text-refrash to #{node} with #{val}"
+
+  Tinywings.directive 'attr', (node, attr)->
+    log "attr-bind to #{node} with #{attr}"
+    attr = JSON.parse attr
+    for key, value of attr
+      if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
+        do (key, value)=>
+          @_bind value, (val)->
+            if BOOLEAN_ATTRIBUTES.indexOf(key) > -1
+              node[key] = not not val
+            else
+              node[key] = val
+            log "attr-refrash to #{node} with #{val}"
+
+  Tinywings.directive 'value', (node, attr)->
+    log "value-bind to #{node} with #{attr}"
+    @_bind attr, (val)->
+      node.value = val
+      log "value-refrash to #{node} with #{val}"
+
+  Tinywings.directive 'if', (node, attr, done)->
+    done()
+    innerTpl = node.innerHTML
+    log "ifnot-bind to #{node} with #{attr}"
+    @_bind attr, (val, valObj)->
+      node.innerHTML = ''
+      log "ifnot-refrash to #{node} with #{val}"
+      if not val
+        return
+
+      innerDomTpl = new Tinywings(innerTpl)
+
+      ###
+      Copy children elements
+      ###
+      child = innerDomTpl.frag.firstChild
+      while child
+        next = child.nextSibling
+        node.appendChild child
+        child = next
+
+      for own key, value of innerDomTpl
+        if key isnt 'frag'
+          if valObj[key]?
+            innerDomTpl[key] valObj[key], valObj, node
+      return
+
+  Tinywings.directive 'foreach', (node, attr, done)->
+    done()
+    innerTpl = node.innerHTML
+    log "foreach-bind to #{node} with #{attr}"
+    @_bind attr, (val)->
+      node.innerHTML = ''
+      log "foreach-refrash to #{node} with #{val}"
+      for item in val
+        innerDomTpl = new Tinywings(innerTpl)
+        ###
+        Copy children elements
+        ###
+        child = innerDomTpl.frag.firstChild
+        while child
+          next = child.nextSibling
+          node.appendChild child
+          child = next
+
+        for own key, value of innerDomTpl
+          if ['frag', 'updaters'].indexOf(key) is -1
+            if item[key]
+              innerDomTpl[key] item[key], item, node
+      return
 
   (tpl)->
     new Tinywings(tpl)
