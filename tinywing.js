@@ -4,19 +4,14 @@
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   Backbone.tinywing = (function(Backbone, _) {
-    var BOOLEAN_ATTRIBUTES, Tinywing, debug, log, preprocessBind, traversal;
+    var Tinywing, debug, log, traversal;
     debug = true;
     log = function() {
       if (debug) {
         return console.log.apply(console, arguments);
       }
     };
-    BOOLEAN_ATTRIBUTES = ['disabled', 'readonly'];
     traversal = function(node, process) {
-
-      /*
-      Stop in new tinywings context
-       */
       var done, next, stop;
       stop = false;
       done = function() {
@@ -32,16 +27,6 @@
         node = next;
       }
     };
-    preprocessBind = function(node) {
-      var attr, bind, type, _ref;
-      if ((_ref = node.dataset) != null ? _ref.bind : void 0) {
-        bind = node.dataset.bind;
-        bind = bind.split(':');
-        type = bind.shift();
-        attr = bind.join(':');
-      }
-      return [type, attr];
-    };
     Tinywing = (function(_super) {
       __extends(Tinywing, _super);
 
@@ -52,31 +37,38 @@
       };
 
       function Tinywing(tpl) {
-        this.updaters = {};
-        this.frag = document.createElement('div');
-        this.frag.innerHTML = tpl;
-        this.preprocess();
+        this.__updaters = {};
+        this.__tpl = tpl;
+        this.compile();
       }
 
-      Tinywing.prototype.preprocess = function() {
-        traversal(this.frag, (function(_this) {
+      Tinywing.prototype.compile = function() {
+        this.__root = document.createElement('div');
+        this.__root.innerHTML = this.__tpl;
+        traversal(this.__root, (function(_this) {
           return function(node, done) {
-            var attr, type, _ref;
+            var attr, directive, _i, _len, _ref;
             if (node.nodeType === 3) {
               return _this.bindTextNode(node);
             }
-            _ref = preprocessBind(node), type = _ref[0], attr = _ref[1];
-            if ((type != null) && (attr != null)) {
-              _this.bind(node, type, attr, done);
+            _ref = node.attributes;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              attr = _ref[_i];
+              if (attr.name.indexOf('tw-') === 0) {
+                directive = attr.name.slice(3);
+                attr = attr.value;
+              }
+            }
+            if (directive && attr) {
+              _this.bind(node, directive, attr, done);
             }
           };
         })(this));
       };
 
-      Tinywing.prototype.bind = function(node, type, attr, done) {
-        var directive;
-        log("" + type + "-bind to " + node + " with " + attr);
-        directive = Tinywing.__directives[type];
+      Tinywing.prototype.bind = function(node, directive, attr, done) {
+        log("" + directive + "-bind to " + node + " with " + attr);
+        directive = Tinywing.__directives[directive];
         if (_.isFunction(directive)) {
           return this._bind(node, attr, directive);
         } else if (_.isObject(directive)) {
@@ -90,10 +82,10 @@
       Tinywing.prototype._bind = function(node, attr, updater) {
         var attrLink, first, _base;
         first = attr.split('.')[0];
-        (_base = this.updaters)[first] || (_base[first] = []);
+        (_base = this.__updaters)[first] || (_base[first] = []);
         this[first] || (this[first] = function(val, valObj, parent) {
           var up, _i, _len, _ref;
-          _ref = this.updaters[first];
+          _ref = this.__updaters[first];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             up = _ref[_i];
             up(node, val, valObj, parent);
@@ -102,7 +94,7 @@
         if (attr.indexOf('.') > -1) {
           attrLink = attr.split('.');
           first = attrLink.shift();
-          this.updaters[first].push(function(node, val, valObj, parent) {
+          this.__updaters[first].push(function(node, val, valObj, parent) {
             var atr, _i, _len;
             for (_i = 0, _len = attrLink.length; _i < _len; _i++) {
               atr = attrLink[_i];
@@ -111,7 +103,7 @@
             updater(node, val, valObj, parent);
           });
         } else {
-          this.updaters[first].push(updater);
+          this.__updaters[first].push(updater);
         }
       };
 
@@ -177,7 +169,7 @@
 
       Tinywing.prototype.appendTo = function(el) {
         var child, next;
-        child = this.frag.firstChild;
+        child = this.__root.firstChild;
         while (child) {
           next = child.nextSibling;
           el.appendChild(child);
@@ -215,7 +207,7 @@
         for (key in this) {
           if (!__hasProp.call(this, key)) continue;
           value = this[key];
-          if (['frag', 'updaters'].indexOf(key) === -1) {
+          if (['__root', '__updaters', '__tpl'].indexOf(key) === -1) {
             this[key](model[key], model);
           }
         }
@@ -248,7 +240,7 @@
         /*
         Copy children elements
          */
-        child = innerDomTpl.frag.firstChild;
+        child = innerDomTpl.__root.firstChild;
         while (child) {
           next = child.nextSibling;
           node.appendChild(child);
@@ -257,7 +249,7 @@
         for (key in innerDomTpl) {
           if (!__hasProp.call(innerDomTpl, key)) continue;
           value = innerDomTpl[key];
-          if (key !== 'frag') {
+          if (key !== '__root') {
             if (valObj[key] != null) {
               innerDomTpl[key](valObj[key], valObj, node);
             }
@@ -279,7 +271,7 @@
           /*
           Copy children elements
            */
-          child = innerDomTpl.frag.firstChild;
+          child = innerDomTpl.__root.firstChild;
           while (child) {
             next = child.nextSibling;
             node.appendChild(child);
@@ -288,7 +280,7 @@
           for (key in innerDomTpl) {
             if (!__hasProp.call(innerDomTpl, key)) continue;
             value = innerDomTpl[key];
-            if (['frag', 'updaters'].indexOf(key) === -1) {
+            if (['__root', '__updaters', '__tpl'].indexOf(key) === -1) {
               if (item[key]) {
                 innerDomTpl[key](item[key], item, node);
               }

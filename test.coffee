@@ -2,24 +2,24 @@
 # knockout tpl syntax
 
 tpl = '''
-  <div data-bind="text:text">
+  <div tw-text="text">
   </div>
-  <p data-bind="text:content"></p>
-  <p>this is inline {{content}} bind.<input data-bind="value:content"/></p>
+  <p tw-text="content"></p>
+  <p>this is inline {{content}} bind.<input tw-value="content"/></p>
   <p>this is inline {{it.content}} bind and {{content}} bind.</p>
-  <p data-bind="if:showIt"><span data-bind="text:it.content"></span><span data-bind="text:showIt"></span> is true</p>
+  <p tw-if="showIt"><span tw-text="it.content"></span><span tw-text="showIt"></span> is true</p>
 '''
 
 tpl1 = '''
-  <div data-bind="foreach:people">this is {{content}}  and {{name}}.<p data-bind="text:content"></p><p data-bind="text:name"></p><div data-bind="foreach:pens"><p data-bind="text:color"></p></div></div>
+  <div tw-repeat="peoples">this is {{content}}  and {{name}}.<p tw-text="content"></p><p tw-text="name"></p><div tw-repeat="pens"><p tw-text="color"></p></div></div>
 '''
 
 tpl2 = '''
-  <div data-bind="text:it.text">
+  <div tw-text="it.text">
   </div>
-  <p data-bind="text:it.content"></p>
-  <p data-bind="text:it.content"></p>
-  <p data-bind="text:that.content"></p>
+  <p tw-text="it.content"></p>
+  <p tw-text="it.content"></p>
+  <p tw-text="that.content"></p>
 '''
 
 
@@ -39,7 +39,7 @@ window.onload = ->
     domTpl1 = Backbone.tinywing tpl1
     domTpl1.appendTo document.body
     o =
-      people:[
+      peoples:[
         {content:'xxx', name: 'yyyy', pens: []},
         {content:'xxx', name: 'yyy' , pens: []}
       ]

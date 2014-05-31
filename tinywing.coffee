@@ -2,15 +2,11 @@ Backbone.tinywing = do (Backbone, _)->
 
   debug = true
   log = ->
-    if debug
-      console.log.apply console, arguments
+      console.log.apply console, arguments if debug
 
-  BOOLEAN_ATTRIBUTES = ['disabled', 'readonly']
-
+  # Travel all child nodes of node
   traversal = (node, process)->
-    ###
-    Stop in new tinywings context
-    ###
+
     stop = false
     done = ->
       stop = true
@@ -24,38 +20,38 @@ Backbone.tinywing = do (Backbone, _)->
       node = next
     return
 
-  preprocessBind = (node)->
-    if node.dataset?.bind
-      bind = node.dataset.bind
-      bind = bind.split ':'
-      type = bind.shift()
-      attr = bind.join ':'
-    [type, attr]
-
   class Tinywing extends Backbone.Events
 
+    # Class method for store direcitives
     @directive: (name, directive)->
       @__directives or= {}
       @__directives[name] or= directive
 
     constructor: (tpl)->
-      @updaters = {}
-      @frag = document.createElement 'div'
-      @frag.innerHTML = tpl
-      @preprocess()
+      @__updaters = {}
+      @__tpl = tpl
+      @compile()
 
-    preprocess: ->
-      traversal @frag, (node, done)=>
+    compile: ->
+      @__root = document.createElement 'div'
+      @__root.innerHTML = @__tpl
+      traversal @__root, (node, done) =>
+        # If node is a text node
         if node.nodeType is 3
           return @bindTextNode node
-        [type, attr] = preprocessBind node
-        @bind node, type, attr, done if type? and attr?
+
+        for attr in node.attributes
+          if attr.name.indexOf('tw-') is 0
+            directive = attr.name.slice(3)
+            attr = attr.value
+        if directive and attr
+          @bind node, directive, attr, done
         return
       return
 
-    bind: (node, type, attr, done)->
-      log "#{type}-bind to #{node} with #{attr}"
-      directive = Tinywing.__directives[type]
+    bind: (node, directive, attr, done)->
+      log "#{directive}-bind to #{node} with #{attr}"
+      directive = Tinywing.__directives[directive]
       if _.isFunction directive
         @_bind node, attr, directive
       else if _.isObject directive
@@ -65,9 +61,9 @@ Backbone.tinywing = do (Backbone, _)->
 
     _bind: (node, attr, updater)->
       first = attr.split('.')[0]
-      @updaters[first] or= []
+      @__updaters[first] or= []
       @[first] or= (val, valObj, parent)->
-        for up in @updaters[first]
+        for up in @__updaters[first]
           up node, val, valObj, parent
         return
 
@@ -75,7 +71,7 @@ Backbone.tinywing = do (Backbone, _)->
       if attr.indexOf('.') > -1
         attrLink = attr.split '.'
         first = attrLink.shift()
-        @updaters[first].push (node, val, valObj, parent)->
+        @__updaters[first].push (node, val, valObj, parent)->
           for atr in attrLink
             val = val[atr]
           updater node, val, valObj, parent
@@ -83,7 +79,7 @@ Backbone.tinywing = do (Backbone, _)->
 
       # content
       else
-        @updaters[first].push updater
+        @__updaters[first].push updater
       return
 
     bindTextNode: (node)->
@@ -135,7 +131,7 @@ Backbone.tinywing = do (Backbone, _)->
       return
 
     appendTo: (el)->
-      child = @frag.firstChild
+      child = @__root.firstChild
       while child
         next = child.nextSibling
         el.appendChild child
@@ -158,7 +154,7 @@ Backbone.tinywing = do (Backbone, _)->
 
     render: (model)->
       for own key, value of @
-        if ['frag', 'updaters'].indexOf(key) is -1
+        if ['__root', '__updaters', '__tpl'].indexOf(key) is -1
           @[key] model[key], model
       @
 
@@ -184,14 +180,14 @@ Backbone.tinywing = do (Backbone, _)->
       ###
       Copy children elements
       ###
-      child = innerDomTpl.frag.firstChild
+      child = innerDomTpl.__root.firstChild
       while child
         next = child.nextSibling
         node.appendChild child
         child = next
 
       for own key, value of innerDomTpl
-        if key isnt 'frag'
+        if key isnt '__root'
           if valObj[key]?
             innerDomTpl[key] valObj[key], valObj, node
       return
@@ -208,14 +204,14 @@ Backbone.tinywing = do (Backbone, _)->
         ###
         Copy children elements
         ###
-        child = innerDomTpl.frag.firstChild
+        child = innerDomTpl.__root.firstChild
         while child
           next = child.nextSibling
           node.appendChild child
           child = next
 
         for own key, value of innerDomTpl
-          if ['frag', 'updaters'].indexOf(key) is -1
+          if ['__root', '__updaters', '__tpl'].indexOf(key) is -1
             if item[key]
               innerDomTpl[key] item[key], item, node
       return
